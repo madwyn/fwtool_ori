@@ -70,7 +70,7 @@ tarfile_open(const char *fname)
 
 	if ((a = archive_read_new())) {
 		archive_read_support_format_tar(a);
-		if (archive_read_open_file(a, fname, TAR_IOBUF_SIZE) == 0) {
+		if (archive_read_open_filename(a, fname, TAR_IOBUF_SIZE) == 0) {
 			return _create_th(a);
 		} else {
 			archive_read_free(a);

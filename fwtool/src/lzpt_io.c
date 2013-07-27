@@ -41,27 +41,44 @@
 #define	LZPT_MAGIC_OFS		0
 #define	LZPT_MAGIC	"TPZL"
 #define	LZPT_MAGIC_LEN	(sizeof(LZPT_MAGIC)-1)
+#define	LZPT_VERSION_OFS	4
 
 #define	LZPT_TOC_OFFSET_OFS	8
 #define	LZPT_TOC_SIZE_OFS	12
 
 #define	LZPT_BLOCK_ALIGN_MASK	(sizeof(unsigned int)-1)
 
-#define	LZPT_MAX_DECOMP_BLOCK_SIZE	65536
+#define	LZPT_MAX_DECOMP_BLOCK_SIZE_VER10	65536
+#define	LZPT_MAX_DECOMP_BLOCK_SIZE_VER11	131072
 
 
 int
-lzpt_read_toc(FILE *fh_in, unsigned char **pp_toc, int *pnum_entries)
+lzpt_read_toc(FILE *fh_in, unsigned char **pp_toc, int *pnum_entries, int *pmax_dblksz)
 {
-	unsigned char	iobuf[512];
-	unsigned int	toc_offset, toc_size, toc_nentries;
-	unsigned char	*p_toc = NULL;
+	unsigned char	iobuf[512], *p_toc = NULL;
+	unsigned int	lztp_version, toc_offset, toc_size, toc_nentries;
 
 	fseek(fh_in, LZPT_MAGIC_OFS, SEEK_SET);
 	if ((fread(iobuf, 1, LZPT_MAGIC_LEN, fh_in) != LZPT_MAGIC_LEN) ||
 		memcmp((void *)iobuf, (void *)LZPT_MAGIC, LZPT_MAGIC_LEN)) {
 		fprintf(stderr, "lzpt_read_toc(): Bad magic!\n");
 		return 1;
+	}
+
+	//added by kenan: LZTP 0x10 mxdblksz=64k, 0x11 =128k (used by EA50, FS700)
+	fseek(fh_in, LZPT_VERSION_OFS, SEEK_SET);
+	fread(iobuf, sizeof(unsigned int), 1, fh_in);
+	lztp_version = readLE32(iobuf);
+	switch (lztp_version) {
+		case 0x00000010:
+			if (pmax_dblksz) *pmax_dblksz = LZPT_MAX_DECOMP_BLOCK_SIZE_VER10;
+			break;
+		case 0x00000011:
+			if (pmax_dblksz) *pmax_dblksz = LZPT_MAX_DECOMP_BLOCK_SIZE_VER11;
+			break;
+		default:
+			fprintf(stderr, "lzpt_read_toc(): Bad version!\n");
+			return 1;
 	}
 
 	fseek(fh_in, LZPT_TOC_OFFSET_OFS, SEEK_SET);
@@ -102,9 +119,8 @@ lzpt_read_toc(FILE *fh_in, unsigned char **pp_toc, int *pnum_entries)
 int
 lzpt_read_block(FILE *fh_in, int block_num, unsigned char *p_toc, size_t toc_entries, unsigned char **pp_block_data, size_t *psz_block)
 {
-	unsigned int	toc_offset, entry_offset, entry_size;
+	unsigned int	toc_offset, entry_offset, entry_size, nread;
 	unsigned char	*p_block;
-	unsigned int	nread;
 
 	*pp_block_data = NULL;
 	*psz_block = 0;
@@ -142,18 +158,16 @@ lzpt_read_block(FILE *fh_in, int block_num, unsigned char *p_toc, size_t toc_ent
 
 
 int
-lzpt_decompress_block(unsigned char *p_block_in, size_t sz_block_in, unsigned char **pp_block_out, size_t *psz_block_out)
+lzpt_decompress_block(unsigned char *p_block_in, size_t sz_block_in, int sz_mxdblk_in, unsigned char **pp_block_out, size_t *psz_block_out)
 {
-	unsigned char	*p_block = NULL;
-	int	remain_in, remain_out;
-	int	this_declen;
-	unsigned char	*p_in, *p_out, *next_in;
+	unsigned char	*p_block = NULL, *p_in, *p_out, *next_in;
+	int	remain_in, remain_out, this_declen;
 	size_t	total_decomp_size;
 
 	*pp_block_out = NULL;
 	*psz_block_out = 0;
 
-	remain_out = LZPT_MAX_DECOMP_BLOCK_SIZE;
+	remain_out = sz_mxdblk_in;
 	if (!(p_block = malloc(remain_out))) {
 		fprintf(stderr, "lzpt_decompress_block(): allocation error!\n");
 		return 1;
@@ -178,7 +192,7 @@ lzpt_decompress_block(unsigned char *p_block_in, size_t sz_block_in, unsigned ch
 
 
 	if ((remain_in > LZPT_BLOCK_ALIGN_MASK) || (remain_out < 0)) {
-		fprintf(stderr, "lzpt_decompress_block(): decompress error!\n");
+		fprintf(stderr, "lzpt_decompress_block(): decompress error! (%d %d %d)\n", remain_in, LZPT_BLOCK_ALIGN_MASK, remain_out);
 		free((void *)p_block);
 		return 1;
 	}
@@ -186,10 +200,10 @@ lzpt_decompress_block(unsigned char *p_block_in, size_t sz_block_in, unsigned ch
 	*pp_block_out = p_block;
 	*psz_block_out = total_decomp_size;
 
-if (total_decomp_size != 65536) {
-	printf("ERROR!\n");
-	exit(1);
-}
+	if (total_decomp_size != sz_mxdblk_in) {
+		printf("ERROR!\n");
+		exit(1);
+	}
 	return 0;
 }
 
@@ -210,7 +224,7 @@ is_lzpt_file(const char *fname)
 	if (!(fh = fopen(fname, "rb"))) {
 		return 0;
 	}
-	ret = lzpt_read_toc(fh, NULL, NULL);
+	ret = lzpt_read_toc(fh, NULL, NULL, NULL);
 	fclose(fh);
 
 	return (ret == 0);
@@ -221,30 +235,27 @@ int
 lzpt_decompress_file(const char *fname_in, const char *fname_out)
 {
 	FILE	*fh_in = NULL, *fh_out = NULL;
-	unsigned char	*p_toc = NULL;
-	unsigned char	*p_enc_block = NULL, *p_dec_block = NULL;
+	unsigned char	*p_toc = NULL, *p_enc_block = NULL, *p_dec_block = NULL;
 	size_t	sz_enc_block, sz_dec_block;
-	int	toc_nentries;
-	int	i;
-	size_t	filesize;
-	int	retval;
+	// size_t  filesize;
+	int	toc_nentries, i, sz_max_dec_block, retval;
 
 
 	if (!(fh_in = fopen(fname_in, "rb"))) {
 		fprintf(stderr, "Error opening input file '%s'!\n", fname_in);
 		goto exit_err;
 	}
-	fseek(fh_in, 0L, SEEK_END);
-	filesize = ftell(fh_in);
-	fseek(fh_in, 0L, SEEK_SET);
+	// fseek(fh_in, 0L, SEEK_END);
+	// filesize = ftell(fh_in);
+	// fseek(fh_in, 0L, SEEK_SET);
 
 
-	if (lzpt_read_toc(fh_in, &p_toc, &toc_nentries)) {
+	if (lzpt_read_toc(fh_in, &p_toc, &toc_nentries, &sz_max_dec_block)) {
 		fprintf(stderr, "Error reading TOC!\n");
 		goto exit_err;
 	}
 
-	sprintf(plog_global, "LZPT: decompressing '%s' (%d blocks)\n      to '%s' ... ", fname_in, toc_nentries, fname_out); log_it(plog_global);
+	sprintf(plog_global, "LZPT: decompressing '%s' (%d blocks, %d maxdblksz)\n      to '%s' ... ", fname_in, toc_nentries, sz_max_dec_block, fname_out); log_it(plog_global);
 
 	if (!(fh_out = fopen(fname_out, "wb"))) {
 		fprintf(stderr, "Error creating output file '%s'!\n", fname_out);
@@ -256,7 +267,7 @@ lzpt_decompress_file(const char *fname_in, const char *fname_out)
 			fprintf(stderr, "Error reading LZTP block #%d\n", i);
 			goto exit_err;
 		}
-		if (lzpt_decompress_block(p_enc_block, sz_enc_block, &p_dec_block, &sz_dec_block)) {
+		if (lzpt_decompress_block(p_enc_block, sz_enc_block, sz_max_dec_block, &p_dec_block, &sz_dec_block)) {
 			fprintf(stderr, "Error decompressing LZTP block #%d\n", i);
 			goto exit_err;
 		}

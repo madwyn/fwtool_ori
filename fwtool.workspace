@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_file>
-	<Workspace title="fwtool">
+	<Workspace title="Workspace">
+		<Project filename="fwtoolGUI/fwtoolGUI.cbp" />
+		<Project filename="fwtool/fwtool.cbp" />
 		<Project filename="libarchive/libarchive.cbp" />
 		<Project filename="zlib/zlib.cbp" />
-		<Project filename="fwtoolGUI/fwtoolGUI.cbp">
-			<Depends filename="fwtool/fwtool.cbp" />
-		</Project>
-		<Project filename="fwtool/fwtool.cbp">
-			<Depends filename="libarchive/libarchive.cbp" />
-			<Depends filename="zlib/zlib.cbp" />
-		</Project>
 	</Workspace>
 </CodeBlocks_workspace_file>

@@ -133,7 +133,7 @@ log_it(char *pinfo)
 {
     FILE *plog;
 
-    if(plog = fopen(LOGFILE,"a"))
+    if((plog = fopen(LOGFILE,"a")))
     {
         fputs(pinfo,plog);
         fflush(plog);

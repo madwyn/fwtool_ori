@@ -33,6 +33,7 @@
 #include "fwd_pack.h"
 
 #include "fwd_chunks.h"
+#include "fdat_crypt.h"
 #include "fdat_image.h"
 
 #include "zipfile.h"
@@ -76,7 +77,8 @@ do_repack(const char *dirname_in, const int fwt_level)
 
 	//TODO more stuff
 
-	//TODO repack FDAT.repack
+	//TODO repack FDAT.repack from tar file and fs image
+
 
 	// encrypt the FDAT dec chunk
 	sprintf(fname_fdat_orig, "%s/%s", dirname_lv2, BASENAME_FDAT_CHUNK);
@@ -291,7 +293,7 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 
 		// assure "FirmwareUpdater.log" exists for use in debugging fwupdate of modified fw
 		strcat(fname_updater_log, "/"UPDATER_LOG);
-		if (pulog = fopen(fname_updater_log, "a")) {
+		if ((pulog = fopen(fname_updater_log, "a"))) {
 			fclose(pulog);
 		}
 		else fprintf(stderr, "do_unpack() FAILED to access or create %s!\n", fname_updater_log);

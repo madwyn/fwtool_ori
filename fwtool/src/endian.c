@@ -93,12 +93,7 @@ LE32toHost(u8 *ptr)
 }
 
 /*
-void
-HosttoLE16(u16 val, u8 *ptr)
-{
-	ptr[0] = (val & 0x00ff);
-	ptr[1] = (val & 0xff00) >> 8;   
-}
+
 
 void
 HosttoBE16 (u16 val, u8 *ptr)
@@ -114,6 +109,13 @@ HosttoBE32 (u32 val, u8 *ptr)
 	ptr[2] = (val & 0xff00) >> 8;
 	ptr[1] = (val & 0xff0000) >> 16;
 	ptr[0] = (val & 0xff000000) >> 24;
+}
+
+void
+HosttoLE16(u16 val, u8 *ptr)
+{
+	ptr[0] = (val & 0x00ff);
+	ptr[1] = (val & 0xff00) >> 8;   
 }
 
 void

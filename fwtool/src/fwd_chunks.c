@@ -46,12 +46,6 @@ static const unsigned char	fwdata_dend_head[] = {
 	0x00, 0x00, 0x00, 0x04, 0x44, 0x45, 0x4E, 0x44,
 };
 
-// chunks (records) in the firmware image start with this
-typedef struct tagFWD_CHUNK_HDR {
-	unsigned char	chunk_len_BE_bytes[4];
-	unsigned char	chunk_id[4];
-} FWD_CHUNK_HDR;
-
 
 static int
 copy_chunk_payload_to_file(FILE *fh_in, const char *chunk_id, u32 chunk_len, const char *fname_out)
@@ -129,7 +123,7 @@ _fwdata_do_unpack(const char *fname_fwdata_in, const char *single_chunk_id, cons
 
 	if (full_extract_dirname_out) {
 		// confirm that output directory exists (create if necessary)
-		//(void)mkdir(full_extract_dirname_out, 0777);
+		// (void)mkdir(full_extract_dirname_out, 0777);
 		mkdir(full_extract_dirname_out);
 
 		// create chunk TOC (table of contents) file
@@ -365,7 +359,7 @@ fwdata_repack_chunks(const char *fname_fwdata_in, const char *dirname_out)
 	// create DEND chunk header
 	memcpy(p_buf+p_buf_offset,fwdata_dend_head,sizeof(chunk_hdr));
 	p_buf_offset=p_buf_offset+sizeof(chunk_hdr)+fwdata_dend_head[3];
-	sprintf(plog_global,"DEND chunk: len %02d offs %02d crc32 0x%08x ... ", sizeof(chunk_hdr)+fwdata_dend_head[3], p_buf_offset, dend_crc); log_it(plog_global);
+	sprintf(plog_global,"DEND chunk: len %02d offs %02d crc32 %#08x ... ", sizeof(chunk_hdr)+fwdata_dend_head[3], p_buf_offset, (unsigned int)dend_crc); log_it(plog_global);
 
 	// write out fwdata.repack
 	sprintf(fname_out, "%s/%s", dirname_out, FWD_REPACKED_NAME);

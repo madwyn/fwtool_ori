@@ -22,11 +22,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdio.h>
 #include <windows.h>
 #include <shlobj.h>
 #include "../res/resource.h"
 
-#include "fwd_pack.h".h"
+#include "fwd_pack.h"
 
 /*----------------- The window attributes -----------------*/
 const char g_szClassName[] = "fwtoolWindowClass";
@@ -189,6 +190,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     return Msg.wParam;
 }
 
+
 /** \brief
  *
  * \param hwnd HWND
@@ -228,7 +230,6 @@ char* convert_name_slashes(char *buf)
 	return buf;
 }
 
-#include <stdio.h>
 
 /** \brief
  *
@@ -335,6 +336,7 @@ void HandleButtonClick(HWND hwnd, WPARAM wParam)
         }
     }
 }
+
 
 /** \brief
  *
@@ -460,8 +462,8 @@ BOOL SelectSaveDir(char *pszDirName, const HWND hwnd)
     return TRUE;
 }
 
-/*----------------- The definition of GUI components -----------------*/
 
+/*----------------- The definition of GUI components -----------------*/
 /** \brief Create the content in the window
  *
  * \param wParent HWND  The parent window
@@ -564,7 +566,6 @@ void CreateWndContent(HWND wParent)
 	SendMessage(wTmp, WM_SETFONT, (WPARAM) h_font, TRUE);
 
 
-
     // The Options group
 	wTmp = CreateWindowEx(WS_EX_LEFT, "Button", "Options",
                         BS_GROUPBOX | WS_CHILD | WS_VISIBLE,
@@ -603,4 +604,3 @@ void CreateWndContent(HWND wParent)
                         80, 260, 440, 20, wParent, (HMENU) IDC_PROGRESS_BAR_STA, hInstance, NULL);
 	SendMessage(wTmp, WM_SETFONT, (WPARAM) h_font, TRUE);
 }
-

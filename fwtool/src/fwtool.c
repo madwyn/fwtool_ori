@@ -10,12 +10,13 @@
 // History
 // v0.5      (2012-11-19 oz_paulb):	initial
 // v0.6alpha (2013-05-09 kenan):	added nflasha9,nflashb1 lzpt decompression
-//                              	added options code for future expansion
+//									added options code for future expansion
 // v0.6beta  (2013-05-16 kenan):	added re encryption of FDAT.dec
-//                              	added repack of fwdata.dat
-//                              	dropped single fwdata unpack
+//									added repack of fwdata.dat
+//									dropped single fwdata unpack
 //									added help, usage and todo
 //									rearrange code, some cleanup
+//									added LZTP 0x11 unpacking
 //
 // Copyright (C) 2012-2013, nex-hack project
 //
@@ -24,7 +25,7 @@
 // All rights reserved.
 //
 // This tool includes code written and copyrighted by third parties.
-// Look at the individual files for further information!
+// Look at individual files for details !
 // It is statically linked with zlib and libarchive and uses code from
 // the minizip project, PolarSSL project and Sony Corporation.
 //

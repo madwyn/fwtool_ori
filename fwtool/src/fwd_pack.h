@@ -28,30 +28,36 @@
 #ifndef FWD_PACK_H
 #define FWD_PACK_H
 
-#include <windows.h>
-
-/*  To use these exported functions of dll, include this header
- *  in your project.
- */
-
-#ifdef BUILD_DLL
-    #define DLL_EXPORT __declspec(dllexport)
+#ifdef FWT_CONSOLE
+    // build exe console only
+    extern	int	do_unpack(const char *exefile_in, const char *dest_name, const int fwt_level);
+    extern	int	do_repack(const char *dirname_in, const int fwt_level);
 #else
-    #define DLL_EXPORT __declspec(dllimport)
+    // build dll for fwtoolGUI
+    #include <windows.h>
+
+    // To use these exported functions of dll, include this header in your project.
+
+    #ifdef BUILD_DLL
+        #define DLL_EXPORT __declspec(dllexport)
+    #else
+        #define DLL_EXPORT __declspec(dllimport)
+    #endif
+
+
+    #ifdef __cplusplus
+        extern "C"
+        {
+    #endif
+
+    DLL_EXPORT int do_unpack(const char *exefile_in, const char *dest_name, const int fwt_level);
+    DLL_EXPORT int do_repack(const char *dirname_in, const int fwt_level);
+
+    #ifdef __cplusplus
+        }
+    #endif
 #endif
 
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-DLL_EXPORT int do_unpack(const char *exefile_in, const char *dest_name, const int fwt_level);
-DLL_EXPORT int do_repack(const char *dirname_in, const int fwt_level);
-
-#ifdef __cplusplus
-}
-#endif
 
 int find_firmware_dat_in_zipfile(const char *fname_zip, char *p_fname_outbuf, int sz_fname_outbuf,
 		char *p_fbase_outbuf, int sz_fbase_outbuf, char *p_fdir_outbuf, int sz_fdir_outbuf,

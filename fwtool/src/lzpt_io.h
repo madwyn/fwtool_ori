@@ -28,10 +28,10 @@
 #ifndef LZPT_IO_H
 #define	LZPT_IO_H
 
-extern	int	lzpt_read_toc(FILE *fh_in, unsigned char **pp_toc, int *pnum_entries);
+extern	int	lzpt_read_toc(FILE *fh_in, unsigned char **pp_toc, int *pnum_entries, int *pmax_dblksz);
 extern	int	lzpt_read_block(FILE *fh_in, int block_num, 
 		unsigned char *p_toc, size_t toc_entries, unsigned char **pp_block_data, size_t *psz_block);
-extern	int	lzpt_decompress_block(unsigned char *p_block_in, size_t sz_block_in, 
+extern	int	lzpt_decompress_block(unsigned char *p_block_in, size_t sz_block_in, int sz_mxdblk_in,
 		unsigned char **pp_block_out, size_t *psz_block_out);
 extern	void	lzpt_free_toc(unsigned char *p_toc, size_t toc_nentries);
 

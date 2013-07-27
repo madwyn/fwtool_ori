@@ -29,7 +29,7 @@
 #define FWT_NAMES_H
 
 // version string and global logfile
-#define VERSION	"v0.6beta9 (2013-06-07)"
+#define VERSION	"v0.6beta11 (2013-07-20)"
 #define LOGFILE "fwtool_log.txt"
 
 // logfile name for Sony FirmwareUpdater

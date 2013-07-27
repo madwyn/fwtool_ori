@@ -28,28 +28,7 @@
 #ifndef FDAT_IMAGE_H
 #define FDAT_IMAGE_H
 
-#ifndef FDAT_CIPHER_H
-	#include "fdat_cipher.h"	// for FDC_METHOD typedef
-#endif
-
-typedef struct tagFDAT_ENC_BLOCK_HDR {
-	unsigned short	hdr_csum;
-	unsigned short	hdr_len_and_flags;
-} FDAT_ENC_BLOCK_HDR;
-
-
-extern	int	fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted, 
-			unsigned char **pp_fdat_decrypted, size_t *psz_fdat_decrypted, FDC_METHOD *p_fdc_method);
-
-extern	int	fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_METHOD *p_fdc_method);
-extern	int	fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const char *fdat_check_fname, FDC_METHOD *p_fdc_method);	// added by kenan
-
-extern	int	fdat_extract_firmware_image(const char *fname_fdat, const char *fname_fw_image);	// the ".tar" file inside the FDAT image
-
-extern	int	fdat_fs_image_count(const char *fname_fdat);
-extern	int	fdat_fs_image_length(const char *fname_fdat, int image_idx);
-extern	int	fdat_extract_fs_image(const char *fname_fdat, int image_idx, const char *fname_fs_image);
-
+#define	FDAT_EXTRACT_IOBUF_SIZE		1048576
 
 #define	FDAT_IMAGE_MAGIC		"UDTRFIRM"
 #define	FDAT_IMAGE_MAGIC_LEN	(sizeof(FDAT_IMAGE_MAGIC)-1)
@@ -57,6 +36,11 @@ extern	int	fdat_extract_fs_image(const char *fname_fdat, int image_idx, const ch
 
 #define	MAX_FDAT_FS_IMAGES		28
 #define	FDAT_HDR_VERSION_LEN	4
+
+typedef struct tagFDAT_ENC_BLOCK_HDR {
+	unsigned short	hdr_csum;
+	unsigned short	hdr_len_and_flags;
+} FDAT_ENC_BLOCK_HDR;
 
 typedef struct tagFDAT_FS_IMAGE_DESC {
 	unsigned char	ffid_ident;									// 0000
@@ -90,6 +74,14 @@ typedef struct tagFDAT_IMAGE_HEADER {
 	FDAT_FS_IMAGE_DESC	fih_fs_image_info[MAX_FDAT_FS_IMAGES];
 
 } FDAT_IMAGE_HEADER;
+
+
+extern	int	fdat_extract_firmware_image(const char *fname_fdat, const char *fname_fw_image);	// the ".tar" file inside the FDAT image
+
+extern	int	fdat_fs_image_count(const char *fname_fdat);
+extern	int	fdat_fs_image_length(const char *fname_fdat, int image_idx);
+extern	int	fdat_extract_fs_image(const char *fname_fdat, int image_idx, const char *fname_fs_image);
+
 
 // FDAT header model type (0xffffffff - value not known to date) // added by kenan
 enum fih_model_type {

@@ -43,7 +43,9 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-DFWT_CONSOLE" />
 				</Compiler>
 			</Target>
 			<Target title="exe_Release">
@@ -53,6 +55,8 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-Wall" />
+					<Add option="-DFWT_CONSOLE" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -65,7 +69,9 @@
 				<Option type="2" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-DBUILD_DLL" />
 				</Compiler>
 			</Target>
 			<Target title="libfwtool">
@@ -76,6 +82,8 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-Wall" />
+					<Add option="-DBUILD_DLL" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -118,6 +126,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src/fdat_cipher_sha1.h" />
+		<Unit filename="src/fdat_crypt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/fdat_crypt.h" />
 		<Unit filename="src/fdat_image.c">
 			<Option compilerVar="CC" />
 		</Unit>
