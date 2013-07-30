@@ -26,6 +26,7 @@
 //
 
 #include "config.h"
+#include "fwt_names.h"
 #include "fwt_util.h"
 
 #include "endian.h"
@@ -221,5 +222,156 @@ exit_ok:
 	ret = 0;
 	// fallthru
 exit_common:
+	return ret;
+}
+
+
+int
+fdat_header_tofile(const char *fname_fdat, const char *fname_fdat_header)
+{
+	FDAT_IMAGE_HEADER	fdat_hdr;
+	FDAT_FS_IMAGE_DESC	*p_desc;
+	int	ret = 0;
+
+	if (fdat_read_image_header(fname_fdat, &fdat_hdr)) {
+		return -1;
+	}
+	p_desc = &fdat_hdr.fih_fs_image_info[0];
+
+    // header begins at pos=0 and has len=offs(fs[0])
+	if (_fdat_extract_image(fname_fdat, 0, (unsigned int)p_desc->ffid_fs_offset, fname_fdat_header) != 0) {
+		fprintf(stderr, "Error extracting fdat header from '%s'!\n", fname_fdat);
+		goto exit_err;
+	}
+   	goto exit_ok;
+
+exit_err:
+	ret = 1;
+	unlink(fname_fdat_header);
+	goto exit_common;
+exit_ok:
+	ret = 0;
+	// fallthru
+exit_common:
+	return ret;
+}
+
+
+int
+fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *dirname_parts)
+{
+	int	ret = 0;
+	FDAT_IMAGE_HEADER	fdat_hdr;
+	FDAT_FS_IMAGE_DESC	*p_desc;
+	FILE	*fh_in = NULL, *fh_out = NULL;
+	int fs_img_count=0, num_fs=0;
+	size_t	head_len=0, filesize=0, fsimg_offset=0, outfilesize=0;
+	unsigned char	*p_block_buf = NULL;
+
+	char	fname_fsimg[MAXPATH] = "";
+
+
+    // read FDAT header from original file
+	sprintf(plog_global, "Reading FDAT dec file header: '%s' ...\n", fname_fdat); log_it(plog_global);
+	if (fdat_read_image_header(fname_fdat, &fdat_hdr)) {
+		return -1;
+	}
+	fs_img_count = fdat_hdr.fih_fs_image_count;
+	p_desc = &fdat_hdr.fih_fs_image_info[0];    // 0 to MAX_FDAT_FS_IMAGES-1
+	head_len = outfilesize += (size_t)p_desc->ffid_fs_offset;	// header len
+	sprintf(plog_global, "FDAT outfilesize: 'header' '%d'='%#04x'\n", outfilesize, outfilesize); log_it(plog_global);
+
+    // filesize fs images
+	for (num_fs=0; num_fs<MAX_FDAT_FS_IMAGES-1; num_fs++) {
+		sprintf(fname_fsimg, "%s/%s%02d%s", dirname_parts, BASENAME_FDAT_FS_PREFIX, num_fs, FSIMAGE_EXT_MOD);
+		if ((fh_in = fopen(fname_fsimg, "rb"))) {
+			fseek(fh_in, 0L, SEEK_END); filesize = ftell(fh_in); fseek(fh_in, 0L, SEEK_SET);
+			outfilesize += filesize;
+			sprintf(plog_global, "FDAT outfilesize (added up): '%s' '%d'='%#04x' (fsz='%#04x')\n", fname_fsimg, outfilesize, outfilesize, filesize); log_it(plog_global);
+			fclose(fh_in);
+		}
+	}
+	sprintf(fname_fsimg, "%s/%s", dirname_parts, BASENAME_FDAT_FIRMWARE_TAR_MOD);
+	if ((fh_in = fopen(fname_fsimg, "rb"))) {
+		fseek(fh_in, 0L, SEEK_END); filesize = ftell(fh_in); fseek(fh_in, 0L, SEEK_SET);
+		outfilesize += filesize;
+		sprintf(plog_global, "FDAT outfilesize (added up): '%s' '%d'='%#04x' (fsz='%#04x')\n", fname_fsimg, outfilesize, outfilesize, filesize); log_it(plog_global);
+		fclose(fh_in);
+	}
+	if (outfilesize < FDAT_EXTRACT_IOBUF_SIZE) {
+		fprintf(stderr, "fdat_repack(): Computed filesize '%d' of '%s' much to small!\n", outfilesize, BASENAME_FDAT_REPACKED);
+		goto exit_err;
+	}
+
+	// buffer for FDAT.repack
+	if (!(p_block_buf = malloc(outfilesize))) {
+		fprintf(stderr, "fdat_repack(): Failed to allocate block buffer!\n");
+		goto exit_err;
+	}
+
+	// read in header, fs images and tar
+	// TODO: do header modification TODO TODO TODO
+	fsimg_offset = head_len;
+	for (num_fs=0; num_fs<MAX_FDAT_FS_IMAGES-1; num_fs++) {
+		sprintf(fname_fsimg, "%s/%s%02d%s", dirname_parts, BASENAME_FDAT_FS_PREFIX, num_fs, FSIMAGE_EXT_MOD);
+		if ((fh_in = fopen(fname_fsimg, "rb"))) {
+			fseek(fh_in, 0L, SEEK_END); filesize = ftell(fh_in); fseek(fh_in, 0L, SEEK_SET);
+			sprintf(plog_global, "Read into buffer '%s' filesize '%#04x'\n", fname_fsimg, filesize); log_it(plog_global);
+			if (fread(p_block_buf+fsimg_offset, 1, filesize, fh_in) != filesize) {
+				fprintf(stderr, "fdat_repack(): Failed to read '%s' filesize '%d'='%#04x'\n", fname_fsimg, filesize, filesize);
+				goto exit_err;
+			}
+			fclose(fh_in);
+			fsimg_offset += filesize;
+		}
+	}
+	sprintf(fname_fsimg, "%s/%s", dirname_parts, BASENAME_FDAT_FIRMWARE_TAR_MOD);
+	if ((fh_in = fopen(fname_fsimg, "rb"))) {
+		fseek(fh_in, 0L, SEEK_END); filesize = ftell(fh_in); fseek(fh_in, 0L, SEEK_SET);
+		sprintf(plog_global, "Read into buffer '%s' filesize '%#04x'\n", fname_fsimg, filesize); log_it(plog_global);
+		if (fread(p_block_buf+fsimg_offset, 1, filesize, fh_in) != filesize) {
+			fprintf(stderr, "fdat_repack(): Failed to read '%s'\n", fname_fsimg);
+			goto exit_err;
+		}
+		fclose(fh_in);
+	}
+	if (fsimg_offset + filesize != outfilesize) {
+		fprintf(stderr, "fdat_repack(): Filesize mismatch (is '%#04x', should '%#04x')!\n", fsimg_offset+filesize, outfilesize);
+		goto exit_err;
+	}
+
+	// TODO: correct header for filesizes, offsets, version and crc :TODO
+
+	// copy modified header into buffer
+	// TODO: check if this is SAVE! Maybe copying the struct this way may crash ...
+	memcpy((void *)p_block_buf, (void *)&fdat_hdr, head_len);
+
+	// write FDAT.repack
+	sprintf(plog_global, "Writing FDAT repack output to '%s' ... ", fname_fdat_repack); log_it(plog_global);
+	if (!(fh_out = fopen(fname_fdat_repack, "wb"))) {
+		fprintf(stderr, "fdat_repack(): Error creating output file '%s'!\n", fname_fdat_repack);
+		goto exit_err;
+	}
+	if (fwrite(p_block_buf, 1, outfilesize, fh_out) != outfilesize) {
+		fprintf(stderr, "fdat_repack(): Failed to write output file '%s'!\n", fname_fdat_repack);
+		goto exit_err;
+	}
+	fclose(fh_out);
+	goto exit_ok;
+
+exit_err:
+	if (fh_in) fclose(fh_in);
+	if (fh_out) fclose(fh_out);
+	unlink(fname_fdat_repack);
+	ret = 1;
+	goto exit_common;
+exit_ok:
+	sprintf(plog_global, "Done\n"); log_it(plog_global);
+	ret = 0;
+	// fallthru
+exit_common:
+	if (p_block_buf) {
+		free((void *)p_block_buf);
+	}
 	return ret;
 }

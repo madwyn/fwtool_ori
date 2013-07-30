@@ -46,7 +46,8 @@ int
 do_repack(const char *dirname_in, const int fwt_level)
 {
 	//TODO delete if finished
-	fprintf(stderr, "create: only encryption of FDAT.dec and repacking to FirmwareData_*.dat implemented to date!\n\n");
+	fprintf(stderr, "create: only repacking of level3 '*.mod.fsimg' files, encryption,\n" \
+					"        and repacking to FirmwareData_*.dat implemented to date!\n\n");
 	//
 
 	char	enc_dirname_in[MAXPATH] = "";
@@ -77,12 +78,20 @@ do_repack(const char *dirname_in, const int fwt_level)
 
 	//TODO more stuff
 
-	//TODO repack FDAT.repack from tar file and fs image
+	// repack FDAT.repack from level3 tar file and fs images
+	sprintf(fname_fdat_orig, "%s/%s", dirname_lv2, BASENAME_FDAT_DECRYPTED);    // var reused!
+	sprintf(fname_fdat_dec, "%s/%s", dirname_lv2, BASENAME_FDAT_REPACKED);
+	printf("=== Repack '%s' files from '%s' ===\n===  to '%s' ===\n\n", FSIMAGE_EXT_MOD, dirname_lv3, fname_fdat_dec);
+	sprintf(plog_global, "=== Repack '%s' files from '%s' ===\n===  to '%s' ===\n\n", FSIMAGE_EXT_MOD, dirname_lv3, fname_fdat_dec); log_it(plog_global);
 
+	if (fdat_repack(fname_fdat_orig, fname_fdat_dec, dirname_lv3) != 0) {
+		fprintf(stderr, "fdat_repack() returned error!\n");
+		return 1;
+	}
 
 	// encrypt the FDAT dec chunk
-	sprintf(fname_fdat_orig, "%s/%s", dirname_lv2, BASENAME_FDAT_CHUNK);
-	sprintf(fname_fdat_dec, "%s/%s", dirname_lv2, BASENAME_FDAT_REPACKED);
+	sprintf(fname_fdat_orig, "%s/%s", dirname_lv2, BASENAME_FDAT_CHUNK);    // var reused!
+	// sprintf(fname_fdat_dec, "%s/%s", dirname_lv2, BASENAME_FDAT_REPACKED); // put one step above
 	sprintf(fname_fdat_enc, "%s/%s", dirname_lv2, BASENAME_FDAT_REENCRYPTED);
 	printf("=== Encrypt '%s' file ===\n===  to '%s' ===\n===  with method defined by'%s' ===\n\n",
 		fname_fdat_dec, fname_fdat_enc, fname_fdat_orig);
@@ -227,6 +236,7 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 
 	char	fname_fdat_enc[MAXPATH] = "";
 	char	fname_fdat_dec[MAXPATH] = "";
+	char	fname_fdat_head[MAXPATH] = "";
 	char	fname_fdat_fw[MAXPATH] = "";
 	char	fname_fdat_fs[MAXPATH] = "";
 	char	dirname_fdat_fw_untar[MAXPATH] = "";
@@ -346,6 +356,15 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 	//(void)mkdir(dirname_lv3, 0777);
 	mkdir(dirname_lv3);
 
+    // extract header for later use in repack
+    sprintf(fname_fdat_head, "%s/%s", dirname_lv3, BASENAME_FDAT_HEADER);
+	sprintf(plog_global, "=== Extract FDAT header to '%s' ===\n", fname_fdat_head); log_it(plog_global);
+	if (fdat_header_tofile(fname_fdat_dec, fname_fdat_head) != 0) {
+		fprintf(stderr, "fdat_header_tofile() returned error!\n");
+		return 1;
+	}
+
+    // extract main fw image tar
 	sprintf(fname_fdat_fw, "%s/%s", dirname_lv3, BASENAME_FDAT_FIRMWARE_TAR);
 	printf("=== Extract FDAT firmware image to '%s' ===\n", fname_fdat_fw);
 	sprintf(plog_global, "=== Extract FDAT firmware image to '%s' ===\n", fname_fdat_fw); log_it(plog_global);
@@ -354,8 +373,8 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 		return 1;
 	}
 
-	// now, extract each of the FDAT "filesystem" images (at the moment, I'm aware of a single
-	// "cramfs" filesystem image, but there could be more)
+	// extract each of the FDAT "filesystem" images (at the moment, I'm aware of a single
+	// "cramfs" filesystem image, but there could be up to 28 fs images)
 	fs_image_count = fdat_fs_image_count(fname_fdat_dec);
 	for (i = 0; i < fs_image_count; i++) {
 		// header sometimes has zero-length entry for (non-existent) second fs image,

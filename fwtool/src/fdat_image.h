@@ -81,7 +81,8 @@ extern	int	fdat_extract_firmware_image(const char *fname_fdat, const char *fname
 extern	int	fdat_fs_image_count(const char *fname_fdat);
 extern	int	fdat_fs_image_length(const char *fname_fdat, int image_idx);
 extern	int	fdat_extract_fs_image(const char *fname_fdat, int image_idx, const char *fname_fs_image);
-
+extern  int	fdat_header_tofile(const char *fname_fdat, const char *fname_fdat_header);
+extern  int fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *dirname_parts);
 
 // FDAT header model type (0xffffffff - value not known to date) // added by kenan
 enum fih_model_type {

@@ -75,10 +75,9 @@ do_help(const char *tool_name)
 			"    -c  Create firmware (only reencrypt&rebuild fwdata to date):\n" \
 			"        Argument: <UpdaterDirectory> created with eXtract mode, this may contain\n" \
 			"        a relative or full path.\n" \
-			"        <UpdaterDirectory>/nexhack/level2/FDAT_repack.bin must exist in same\n" \
-			"        format as FDAT_decrypt.bin in this directory, this file will be\n" \
-			"        reencrypted and repacked to a valid FirmwareUpdate*.dat, further\n" \
-			"        versions of fwtool will repack lower levels not implemented yet.\n" \
+			"        <UpdaterDirectory>/nexhack/level3/*.mod.* must exist, this files will be\n" \
+			"        repacked, reencrypted and repacked to a valid FirmwareUpdate*.dat,\n" \
+			"        further versions of fwtool will repack lower levels not implemented yet.\n" \
 			"        Run <UpdaterDirectory>/FirmwareUpdater.exe to update cam with modified\n" \
 			"        firmware <UpdaterDirectory>/Resource/FirmwareData_NexHack.dat.\n" \
 			"        Original firmware is saved to\n" \
@@ -103,15 +102,17 @@ void
 do_todolist(const char *tool_name)
 {
 	printf("TODO list %s "VERSION" (in that order)\n\n" \
-			"  implement creation of FDAT_repack.bin (after modification)\n" \
-			"  implement repacking of tar, lzpt\n" \
-			"  implement level logic for ease of repack (create mode)\n" \
-			"  cleanup variables, variable names and code ;)\n" \
-			"  implement unpacking of cramfs, cramfs-lz77, axfs, vfat, ext2\n" \
-			"  implement repacking of vfat, ext2, cramfs(lz77), axfs\n" \
-			"  implement modify config&code package format\n" \
-			"  clear many minor TODO, UGLY; do heavy testing\n" \
-			"  document what this tools do ...\n\n", tool_name);
+			"  v07: implement repacking of tar, lzpt\n" \
+			"  v07: implement level logic for ease of repack (create mode)\n" \
+			"  v07: fully integrate fwtoolGUI into main code\n" \
+			"  v07: cleanup variables, variable names and code ;)\n" \
+			"  v08: implement unpacking of cramfs, cramfs-lz77, axfs, vfat, ext2\n" \
+			"  v08: implement repacking of vfat, ext2, cramfs(lz77), axfs\n" \
+			"  v08: implement modify config&code package format\n" \
+			"  v09: implement on the fly in memory modify for end users\n" \
+			"  v09: implement modify of level6 (bin fw's for sub cpu's)\n" \
+			"  v09: clear many minor TODO, UGLY; do heavy testing\n" \
+			"  v1.0: document what this tools do ...\n\n", tool_name);
 }
 
 

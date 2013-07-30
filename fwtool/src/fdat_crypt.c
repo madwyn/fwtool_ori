@@ -233,19 +233,15 @@ exit_common:
 int
 fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_METHOD *p_fdc_method)
 {
+	int	retval;
 	FDC	fdc;
 	FDC_METHOD	fdc_method;
-	int	retval;
 	FDAT_ENC_BLOCK_HDR	*p_blk_hdr;
 	FILE	*fh_in = NULL, *fh_out = NULL;
-	size_t	max_block_len, block_len;
-	size_t	filesize;
+	size_t	max_block_len, block_len, filesize, block_len_decrypted, this_len_decrypted;
+	int	nblocks, block;
 	unsigned char	*p_block_buf = NULL;
-	int	nblocks;
-	int	block;
-	size_t	block_len_decrypted, this_len_decrypted;
-	unsigned short	block_hdr_csum, block_hdr_len_and_flags;
-	unsigned short	calc_csum;
+	unsigned short	block_hdr_csum, block_hdr_len_and_flags, calc_csum;
 	// int	last_block;
 
 	if (p_fdc_method) *p_fdc_method = FDCM_UNKNOWN;
@@ -259,9 +255,8 @@ fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_MET
 
 	fdc_init(&fdc, 0, FDCM_UNKNOWN);
 
-	// first, we need to read a block of data (of the max possible size for a crypto block),
-	// then 'guess' the  crypto method using that buffer.  then, we'll go back and really
-	// decrypt the file
+	// first, we read a block of data (of the max possible size for a crypto block), then
+	// 'guess' the  crypto method using that buffer. we go back and decrypt the file.
 	max_block_len = fdc_max_block_len(&fdc);
 	if (!(p_block_buf = malloc(max_block_len))) {
 		fprintf(stderr, "decrypt_fdat_file(): Failed to allocate block buffer!\n");
@@ -393,28 +388,22 @@ exit_common:
 int
 fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const char *fdat_check_fname, FDC_METHOD *p_fdc_method)
 {
+	int	retval=0;
 	FDC	fdc;
 	FDC_METHOD	fdc_method = FDCM_UNKNOWN;
-	int	retval=0;
 	// FDAT_ENC_BLOCK_HDR	*p_blk_hdr;
 	FILE	*fh_check = NULL, *fh_in = NULL, *fh_out = NULL;
-	size_t	max_block_len=0, block_len=0;
-	size_t	filesize=0;
+	size_t	max_block_len=0, block_len=0, filesize=0, block_len_decrypted=0, this_len_decrypted=0, this_len_encrypted=0;
+	int nblocks=0, block=0, last_block=0, pad=0;
 	unsigned char	*p_block_buf = NULL;
-	int	nblocks=0;
-	int	block=0;
-	size_t	block_len_decrypted=0, this_len_decrypted=0, this_len_encrypted=0;
 	unsigned short	calc_csum=0;
-	int	last_block=0, pad=0;
 	u16 highb=0;
 
 	if (p_fdc_method) *p_fdc_method = FDCM_UNKNOWN;
 
-	//
 	// autotdetect fdc_method for encrypt
 	// we read a block of data from encrypted FDAT.bin to 'guess' the crypto method using that buffer.
 	// TODO find better method using content of FDAT.dec file
-	//
 	if (!(fh_check = fopen(fdat_check_fname, "rb"))) {
 		fprintf(stderr, "decrypt_fdat_file(): Error opening FDAT bin file '%s'!\n", fdat_check_fname);
 		goto exit_err;
