@@ -33,6 +33,15 @@ extern int fwt_verbose_global;
 extern char	plog_global[1024];
 // globals for logfile
 
+// for model database see fwt_util.c:name_model()
+#define	NUM_MODEL_TYPE	47
+
+// model type database, add fields if neccesary
+typedef struct tagMODEL_TYPE {
+	unsigned int	modt_fih_model;
+	unsigned char	modt_name[32];
+} MODEL_TYPE;
+
 
 extern void	do_version(const char *tool_name);
 extern void	do_usage(const char *tool_name);
@@ -42,5 +51,7 @@ extern void	do_todolist(const char *tool_name);
 extern char	*convert_path_slashes(char *buf);
 extern void	log_it(char *pinfo);
 
-#endif // FWT_UTIL_H
+extern void	name_model(const unsigned int fih_model_type, MODEL_TYPE *buf);
 
+
+#endif // FWT_UTIL_H

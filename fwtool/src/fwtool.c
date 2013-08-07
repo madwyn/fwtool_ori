@@ -62,8 +62,7 @@ int
 main(int argc, char *argv[])
 {
 	char	*tool_name=argv[0];
-	char	fwt_mode=0, fwt_level=127;
-	int	i;
+	int	i, fwt_mode=0, fwt_level=127, fwt_minorver= -1, fwt_majorver= -1;
 
 	char	*src_name = NULL, *dest_name = NULL;
 
@@ -103,8 +102,22 @@ main(int argc, char *argv[])
 						fwt_verbose_global = 1;
 					}
 					if (c == 'l') {
-						//TODO: check format
 						fwt_level = atoi(argv[i+1]);
+						if(fwt_level > 127) fwt_level = 127;
+						if(fwt_level < 1) fwt_level = 1;
+					}
+					if (c == 'j') {
+						fwt_majorver = atoi(argv[i+1]);
+						// major may be signed, if not, allow for 1..255
+						if(fwt_majorver > FWT_MAXMAJORVER) fwt_majorver = FWT_MAXMAJORVER;
+						// no beta fw 0.x ever released as update file ...
+						if(fwt_majorver < 1) fwt_majorver = 1;
+					}
+					if (c == 'i') {
+						fwt_minorver = atoi(argv[i+1]);
+						// minor may be signed, if not, allow for 0..255
+						if(fwt_minorver > FWT_MAXMINORVER) fwt_minorver = FWT_MAXMINORVER;
+						if(fwt_minorver < 0) fwt_minorver = 0;
 					}
 					if (c == 'd') {
 						//TODO: check format
@@ -119,7 +132,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	switch (fwt_mode) {   
+	switch (fwt_mode) {
 		case 0:
 				// add .exe if not given
 				if(!strstr(src_name, EXE_SUFFIX)) {
@@ -127,13 +140,15 @@ main(int argc, char *argv[])
 					sprintf(l_src_name,"%s%s", src_name, EXE_SUFFIX);
 					src_name = l_src_name;
 				}
+				if(fwt_minorver != -1) fprintf(stderr, "minor version number makes no sense in extract mode, ignored!\n");
+				if(fwt_majorver != -1) fprintf(stderr, "major version number makes no sense in extract mode, ignored!\n");
 				sprintf(plog_global,"_____\nfwtool %s extracting '%s' to '%s'\n\n", VERSION, src_name, dest_name); log_it(plog_global);
 				exit(do_unpack(src_name, dest_name, fwt_level));
 				break;
 		case 1:
 				if(dest_name) fprintf(stderr, "destination directory makes no sense in create mode, ignored!\n");
 				sprintf(plog_global,"_____\nfwtool %s repacking '%s'\n\n", VERSION, src_name); log_it(plog_global);
-				exit(do_repack(src_name, fwt_level));
+				exit(do_repack(src_name, fwt_level, fwt_majorver, fwt_minorver));
 				break;
 		case 2:
 				//TODO delete when implemented

@@ -31,7 +31,7 @@
 #ifdef FWT_CONSOLE
     // build exe console only
     extern	int	do_unpack(const char *exefile_in, const char *dest_name, const int fwt_level);
-    extern	int	do_repack(const char *dirname_in, const int fwt_level);
+    extern	int	do_repack(const char *dirname_in, const int fwt_level, const int fwt_majorver, const int fwt_minorver);
 #else
     // build dll for fwtoolGUI
     #include <windows.h>
@@ -51,7 +51,7 @@
     #endif
 
     DLL_EXPORT int do_unpack(const char *exefile_in, const char *dest_name, const int fwt_level);
-    DLL_EXPORT int do_repack(const char *dirname_in, const int fwt_level);
+    DLL_EXPORT int do_repack(const char *dirname_in, const int fwt_level, const int fwt_majorver, const int fwt_minorver);
 
     #ifdef __cplusplus
         }

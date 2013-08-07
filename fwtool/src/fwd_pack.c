@@ -43,7 +43,7 @@
 
 // added by kenan
 int
-do_repack(const char *dirname_in, const int fwt_level)
+do_repack(const char *dirname_in, const int fwt_level, const int fwt_majorver, const int fwt_minorver)
 {
 	//TODO delete if finished
 	fprintf(stderr, "create: only repacking of level3 '*.mod.fsimg' files, encryption,\n" \
@@ -84,7 +84,7 @@ do_repack(const char *dirname_in, const int fwt_level)
 	printf("=== Repack '%s' files from '%s' ===\n===  to '%s' ===\n\n", FSIMAGE_EXT_MOD, dirname_lv3, fname_fdat_dec);
 	sprintf(plog_global, "=== Repack '%s' files from '%s' ===\n===  to '%s' ===\n\n", FSIMAGE_EXT_MOD, dirname_lv3, fname_fdat_dec); log_it(plog_global);
 
-	if (fdat_repack(fname_fdat_orig, fname_fdat_dec, dirname_lv3) != 0) {
+	if (fdat_repack(fname_fdat_orig, fname_fdat_dec, dirname_lv3, fwt_majorver, fwt_minorver) != 0) {
 		fprintf(stderr, "fdat_repack() returned error!\n");
 		return 1;
 	}

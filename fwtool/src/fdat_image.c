@@ -35,14 +35,16 @@
 
 #include "fdat_image.h"
 
+#include "zlib.h"	// for crc-32
+
 
 int
 fdat_read_image_header(const char *fname_fdat, FDAT_IMAGE_HEADER *p_image_hdr)
 {
 	FILE	*fh;
 	FDAT_IMAGE_HEADER	l_hdr;
-	int	i;
 	FDAT_FS_IMAGE_DESC	*p_desc;
+	int	i;
 
 	if (!(fh = fopen(fname_fdat, "rb"))) {
 		fprintf(stderr, "Failed to open FDAT image '%s'!\n", fname_fdat);
@@ -143,6 +145,7 @@ fdat_extract_firmware_image(const char *fname_fdat, const char *fname_fw_image)
 		fprintf(stderr, "Error extracting firmware image from '%s'!\n", fname_fdat);
 		goto exit_err;
 	}
+
 	goto exit_ok;
 
 exit_err:
@@ -231,6 +234,7 @@ fdat_header_tofile(const char *fname_fdat, const char *fname_fdat_header)
 {
 	FDAT_IMAGE_HEADER	fdat_hdr;
 	FDAT_FS_IMAGE_DESC	*p_desc;
+	MODEL_TYPE	model_name;
 	int	ret = 0;
 
 	if (fdat_read_image_header(fname_fdat, &fdat_hdr)) {
@@ -243,6 +247,10 @@ fdat_header_tofile(const char *fname_fdat, const char *fname_fdat_header)
 		fprintf(stderr, "Error extracting fdat header from '%s'!\n", fname_fdat);
 		goto exit_err;
 	}
+
+	name_model(fdat_hdr.fih_model, &model_name);
+	sprintf(plog_global, "FDAT model '%s' (%#04x) version '%d.%02d'\n", model_name.modt_name, model_name.modt_fih_model, fdat_hdr.fih_version_major, fdat_hdr.fih_version_minor); log_it(plog_global);
+
    	goto exit_ok;
 
 exit_err:
@@ -258,16 +266,17 @@ exit_common:
 
 
 int
-fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *dirname_parts)
+fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *dirname_parts, const int fwt_majorver, const int fwt_minorver)
 {
 	int	ret = 0;
 	FDAT_IMAGE_HEADER	fdat_hdr;
-	FDAT_FS_IMAGE_DESC	*p_desc;
+	FDAT_FS_IMAGE_DESC	*p_desc = NULL;
+	MODEL_TYPE	model_name;
 	FILE	*fh_in = NULL, *fh_out = NULL;
 	int fs_img_count=0, num_fs=0;
+	unsigned int	fdat_crc=0;
 	size_t	head_len=0, filesize=0, fsimg_offset=0, outfilesize=0;
 	unsigned char	*p_block_buf = NULL;
-
 	char	fname_fsimg[MAXPATH] = "";
 
 
@@ -315,6 +324,8 @@ fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *d
 	for (num_fs=0; num_fs<MAX_FDAT_FS_IMAGES-1; num_fs++) {
 		sprintf(fname_fsimg, "%s/%s%02d%s", dirname_parts, BASENAME_FDAT_FS_PREFIX, num_fs, FSIMAGE_EXT_MOD);
 		if ((fh_in = fopen(fname_fsimg, "rb"))) {
+			p_desc = &fdat_hdr.fih_fs_image_info[num_fs];
+			p_desc->ffid_fs_offset = fsimg_offset;
 			fseek(fh_in, 0L, SEEK_END); filesize = ftell(fh_in); fseek(fh_in, 0L, SEEK_SET);
 			sprintf(plog_global, "Read into buffer '%s' filesize '%#04x'\n", fname_fsimg, filesize); log_it(plog_global);
 			if (fread(p_block_buf+fsimg_offset, 1, filesize, fh_in) != filesize) {
@@ -323,6 +334,13 @@ fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *d
 			}
 			fclose(fh_in);
 			fsimg_offset += filesize;
+			p_desc->ffid_fs_length = filesize;
+		}
+		else {
+			if (num_fs+1 < fs_img_count) {
+				// TODO: simple info, handle full blown ...
+				sprintf(plog_global, "fs image '%s' not found\n", fname_fsimg); log_it(plog_global);
+			}
 		}
 	}
 	sprintf(fname_fsimg, "%s/%s", dirname_parts, BASENAME_FDAT_FIRMWARE_TAR_MOD);
@@ -334,17 +352,40 @@ fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *d
 			goto exit_err;
 		}
 		fclose(fh_in);
+		fdat_hdr.fih_fw_offset = fsimg_offset;
+		fdat_hdr.fih_fw_length = filesize;
 	}
 	if (fsimg_offset + filesize != outfilesize) {
 		fprintf(stderr, "fdat_repack(): Filesize mismatch (is '%#04x', should '%#04x')!\n", fsimg_offset+filesize, outfilesize);
 		goto exit_err;
 	}
 
-	// TODO: correct header for filesizes, offsets, version and crc :TODO
+	name_model(fdat_hdr.fih_model, &model_name);
+	sprintf(plog_global, "FDAT model '%s' (%#04x) original version '%d.%02d'\n", model_name.modt_name, model_name.modt_fih_model, fdat_hdr.fih_version_major, fdat_hdr.fih_version_minor); log_it(plog_global);
+
+	// if not set from option, increment minor version, or major if overflow
+	if ((fwt_majorver == -1) && (fwt_minorver == -1)) {
+		if (fdat_hdr.fih_version_minor < FWT_MAXMINORVER) fdat_hdr.fih_version_minor += fdat_hdr.fih_version_minor;
+		else {
+			fdat_hdr.fih_version_major += fdat_hdr.fih_version_major;
+			fdat_hdr.fih_version_minor = 0;
+		}
+	}
+	else {
+		if (fwt_majorver > FWT_NOMODELVERSION) fdat_hdr.fih_version_major = fwt_majorver;
+		if (fwt_minorver > FWT_NOMODELVERSION) fdat_hdr.fih_version_minor = fwt_minorver;
+	}
+	printf("===   Model '%s' set to version '%d.%02d'   ===\n\n", model_name.modt_name, fdat_hdr.fih_version_major, fdat_hdr.fih_version_minor);
+	sprintf(plog_global, "FDAT model '%s' (%#04x) set version to '%d.%02d'\n", model_name.modt_name, model_name.modt_fih_model, fdat_hdr.fih_version_major, fdat_hdr.fih_version_minor); log_it(plog_global);
 
 	// copy modified header into buffer
 	// TODO: check if this is SAVE! Maybe copying the struct this way may crash ...
-	memcpy((void *)p_block_buf, (void *)&fdat_hdr, head_len);
+	memcpy(p_block_buf, &fdat_hdr, head_len);
+
+	// header crc32 correction
+	fdat_crc = crc32(fdat_crc, p_block_buf+FDAT_IMAGE_MAGIC_LEN+sizeof(fdat_hdr.fih_header_crc), head_len-FDAT_IMAGE_MAGIC_LEN-sizeof(fdat_hdr.fih_header_crc));
+	sprintf(plog_global, "Write FDAT crc32 '%#04x'\n", fdat_crc); log_it(plog_global);
+	memcpy(p_block_buf+FDAT_IMAGE_MAGIC_LEN, &fdat_crc, sizeof(fdat_hdr.fih_header_crc));
 
 	// write FDAT.repack
 	sprintf(plog_global, "Writing FDAT repack output to '%s' ... ", fname_fdat_repack); log_it(plog_global);

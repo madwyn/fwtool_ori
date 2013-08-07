@@ -63,7 +63,7 @@ typedef struct tagFDAT_IMAGE_HEADER {
 	unsigned char	fih_version_minor;							// 0020 - minor version: FF is sign-extended on read
 	unsigned char	fih_version_major;							// 0021 - major version: FF is sign-extended on read
 	unsigned char	fih_version_unknown_pad[2];					// 0022
-	unsigned int	fih_model;									// 0024 - body or lens model (see table)
+	unsigned int	fih_model;									// 0024 - body or lens model (see table in fwt_util.c)
 	unsigned int	fih_unknown_03;								// 0028 - unknown u32
 	unsigned int	fih_unknown_04;								// 002c
 	unsigned int	fih_fw_offset;								// 0030 - offset to firmware image (.tar)
@@ -82,54 +82,7 @@ extern	int	fdat_fs_image_count(const char *fname_fdat);
 extern	int	fdat_fs_image_length(const char *fname_fdat, int image_idx);
 extern	int	fdat_extract_fs_image(const char *fname_fdat, int image_idx, const char *fname_fs_image);
 extern  int	fdat_header_tofile(const char *fname_fdat, const char *fname_fdat_header);
-extern  int fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *dirname_parts);
+extern  int	fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *dirname_parts, const int fwt_majorver, const int fwt_minorver);
 
-// FDAT header model type (0xffffffff - value not known to date) // added by kenan
-enum fih_model_type {
-	fih_unknown		=0x00000000,
-	fih_dslra560	=0xffffffff,
-	fih_dslra580	=0xffffffff,
-	fih_slta33		=0x10300202,	// 1.gen
-	fih_slta35		=0xffffffff,	// 1.gen
-	fih_slta37		=0x21030008,
-	fih_slta55		=0x10300203,	// 1.gen
-	fih_slta57		=0x21030006,
-	fih_slta58		=0xffffffff,
-	fih_slta65		=0x12030012,
-	fih_slta77		=0x12030011,
-	fih_slta99		=0x22030010,
-	fih_nex3		=0x10300206,	// 1.gen
-	fih_nexc3		=0x11300223,	// 1.gen
-	fih_nexf3		=0x21030010,
-	fih_nex3n		=0xffffffff,
-	fih_nex5		=0x10300205,	// 1.gen
-	fih_nex5n		=0x12030023,
-	fih_nex5r		=0x22030014,
-	fih_nex6		=0x22030018,
-	fih_nex7		=0x12030024,
-	fih_nexvg10		=0x10300211,	// 1.gen
-	fih_nexvg20		=0xffffffff,
-	fih_nexvg30		=0xffffffff,
-	fih_nexvg900	=0xffffffff,
-	fih_nexea50		=0xffffffff,
-	fih_nexfs100	=0x11010009,
-	fih_nexfs700	=0xffffffff,
-	fih_sel16f28	=0xffffffff,
-	fih_sel20f28	=0xffffffff,
-	fih_sel24f18	=0x11A08015,
-	fih_sel30m35	=0x11A08014,
-	fih_sel50f18	=0x11A08016,
-	fih_sel1650pz	=0xffffffff,
-	fih_sel1855		=0x10A08011,
-	fih_sel18200	=0x10A08013,
-	fih_sel18200le	=0xffffffff,
-	fih_sel18200pz	=0xffffffff,
-	fih_sel55210	=0x11A08012,
-	fih_laea1		=0x10A00001,	// 1.gen
-	fih_laea2		=0xffffffff,
-	fih_laea3		=0xffffffff,
-	fih_dscrx100	=0xffffffff,
-	fih_dscrx1		=0xffffffff
-};
 
 #endif // FDAT_IMAGE_H

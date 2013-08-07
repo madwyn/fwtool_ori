@@ -29,7 +29,7 @@
 #define FWT_NAMES_H
 
 // version string and global logfile
-#define VERSION	"v0.6beta12 (2013-07-30)"
+#define VERSION	"v0.6final (2013-08-07)"
 #define LOGFILE "fwtool_log.txt"
 
 // logfile name for Sony FirmwareUpdater
@@ -87,6 +87,10 @@
 #define	BASENAME_FDAT_FS_PREFIX	"FDAT_fs"
 #define FSIMAGE_EXT_MOD	".mod" FSIMAGE_EXT
 
+#define FWT_NOMODELVERSION	-1
+#define	FWT_MAXMAJORVER	127
+#define	FWT_MAXMINORVER	127
+
 // level4 dirnames
 #define	LEVEL4_SUBDIR	"level4"
 // level4 tar and cramfs
@@ -113,5 +117,6 @@
 // level6 dirnames
 #define	LEVEL6_SUBDIR	"level6"
 // level6 images inside images in tar (2.gen only)
+
 
 #endif // FWT_NAMES_H
