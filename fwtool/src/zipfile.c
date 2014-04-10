@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "zipfile.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -72,7 +72,7 @@
 static zip_handle
 _create_zh(unzFile uf)
 {
-	zip_handle	retval = NULL;
+	zip_handle	retval=NULL;
 
 	if ((retval = malloc(sizeof(zip_handle_struct)))) {
 		memset((void *)retval, 0, sizeof(zip_handle_struct));
@@ -166,7 +166,7 @@ zipfile_close(zip_handle zh)
 int
 is_zipfile(const char *fname)
 {
-	zip_handle	zh;
+	zip_handle	zh=NULL;
 
 	if ((zh = zipfile_open(fname))) {
 		zipfile_close(zh);
@@ -193,8 +193,8 @@ zipfile_find_first(zip_handle zh, char *p_fname_buf, int sz_fname_buf, unsigned 
 int
 zipfile_find_next(zip_handle zh, char *p_fname_buf, int sz_fname_buf, unsigned long *p_uncomp_size, unsigned int *p_crc32)
 {
-	char	filename_buf[512];
-	int	len;
+	char	filename_buf[512]="";
+	int	len=0;
 
 	if (zh->next_idx >= zh->gi.number_entry) {
 		return 1;
@@ -227,8 +227,8 @@ zipfile_find_next(zip_handle zh, char *p_fname_buf, int sz_fname_buf, unsigned l
 int
 zipfile_list(zip_handle zh)
 {
-	char	fname[MAXPATH];
-	int	ret = 0;
+	int	ret=0;
+	char	fname[MAXPATH]="";
 
 	if (!zh) {
 		return 1;
@@ -245,14 +245,13 @@ zipfile_list(zip_handle zh)
 int
 zipfile_extract_file(char *fname_zip, char *fname_inzip, char *dirname_out, char *p_extracted_namebuf)
 {
-	int	ret = 0;
-	zip_handle	zh = NULL;
-	char	fullname_out[MAXPATH] = {0};
-	char	*p_basename_inzip;
-	char	*p_last_slash, *p_last_backslash;
-	unsigned char	*p_iobuf = NULL;
-	FILE	*fh_out = NULL;
-	int	nbytes;
+	int	ret=0;
+	zip_handle	zh=NULL;
+	char	fullname_out[MAXPATH]={0};
+	char	*p_basename_inzip=NULL, *p_last_slash=NULL, *p_last_backslash=NULL;
+	unsigned char	*p_iobuf=NULL;
+	FILE	*fh_out=NULL;
+	int	nbytes=0;
 
 	if (p_extracted_namebuf) *p_extracted_namebuf = '\0';
 
@@ -345,13 +344,13 @@ int
 _zipfile_extract_current_entry(zip_handle zh, char *dirname_out, char *p_fname_buf, int show_extract_names)
 {
 	//TODO implement dirname_out (extract complete zip not to current dir but to dirname_out)
-	char filename_inzip[MAXPATH];
-	char* filename_withoutpath;
-	char* p;
+	char filename_inzip[MAXPATH]="";
+	char* filename_withoutpath=NULL;
+	char* p=NULL;
 	int err=UNZ_OK;
 	FILE *fout=NULL;
-	void* buf;
-	uInt size_buf;
+	void* buf=NULL;
+	uInt size_buf=0;
 
 	if (p_fname_buf) *p_fname_buf = '\0';
 
@@ -406,7 +405,8 @@ _zipfile_extract_current_entry(zip_handle zh, char *dirname_out, char *p_fname_b
 		}
 
 		if (err==UNZ_OK) {
-			fout=fopen64(write_filename,"wb");
+//TOTO		fout=fopen64(write_filename,"wb");		//DEBUG TODO: compiler warning
+			fout=fopen(write_filename,"wb");
 
 			/* some zipfile don't contain directory alone before file */
 			if ((fout==NULL) && (filename_withoutpath!=(char*)filename_inzip)) {
@@ -420,14 +420,16 @@ _zipfile_extract_current_entry(zip_handle zh, char *dirname_out, char *p_fname_b
 					mkdir(l_write_filename);
 					*(filename_withoutpath-1)=c;
 					sprintf(l_write_filename,"%s/%s", dirname_out, filename_inzip);
-					fout=fopen64(l_write_filename,"wb");
+//TODO				fout=fopen64(l_write_filename,"wb");
+					fout=fopen(l_write_filename,"wb");
 				}
 				else {
 					sprintf(plog_global, "Creating directory (from path): %s\n",write_filename); log_it(plog_global);
 					//(void)mkdir(write_filename, 0777);
 					mkdir(write_filename);
 					*(filename_withoutpath-1)=c;
-					fout=fopen64(write_filename,"wb");
+//TODO				fout=fopen64(write_filename,"wb");
+					fout=fopen(write_filename,"wb");
 				}
 			}
 
@@ -478,10 +480,10 @@ int
 zipfile_extract_all(char *fname_zip, char *dirname_out, char *p_extracted_dir, char *p_extracted_fname, int show_extract_names)
 {
 	//TODO implement dirname_out (extract complete zip not to current dir but to dirname_out)
-	int	ret = 0;
-	uLong	i;
+	int	ret=0;
+	uLong	i=0;
 	unz_global_info64	gi;
-	int	err;
+	int	err=UNZ_OK;
 
 	zip_handle	zh = NULL;
 	char	*p_fname_buf = NULL;

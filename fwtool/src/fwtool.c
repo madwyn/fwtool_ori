@@ -17,8 +17,11 @@
 //									added help, usage and todo
 //									rearrange code, some cleanup
 //									added LZTP 0x11 unpacking
+// v0.7beta  (2013-09-02 kenan):    added retar
+// v0.7beta  (2014-03-31 kenan):    added uxbrowse
+//									added 3.gen breakout
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fwtool.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -49,6 +52,7 @@
 #include "config.h"		// compiler and os dependant config
 #include "fwt_names.h"	// version string and hardcoded names are set there
 #include "fwt_util.h"
+#include "fwt_uxbrowse.h"
 #include "fwd_pack.h"
 
 
@@ -62,9 +66,8 @@ int
 main(int argc, char *argv[])
 {
 	char	*tool_name=argv[0];
-	int	i, fwt_mode=0, fwt_level=127, fwt_minorver= -1, fwt_majorver= -1;
-
-	char	*src_name = NULL, *dest_name = NULL;
+	char	*src_name=NULL, *dest_name=NULL;
+	int	i=0, fwt_mode=0, fwt_level=127, fwt_minorver=-1, fwt_majorver=-1;
 
 	do_version(tool_name);
 
@@ -88,6 +91,9 @@ main(int argc, char *argv[])
 					}
 					if (c == 'm') {
 						fwt_mode = 2;
+					}
+					if (c == 'u') {
+						fwt_mode = 129;
 					}
 					if (c == 'h') {
 						do_help(tool_name);
@@ -132,6 +138,10 @@ main(int argc, char *argv[])
 		}
 	}
 
+#ifdef FWT_DEBUG
+	fwt_verbose_global = 127;
+#endif // FWT_DEBUG
+
 	switch (fwt_mode) {
 		case 0:
 				// add .exe if not given
@@ -163,6 +173,10 @@ main(int argc, char *argv[])
 				//TODO modify call:
 				// retval = do_repack(src_name, fwt_level);
 				// return(retval);
+				break;
+		case 129:
+				sprintf(plog_global,"_____\nfwtool %s uxbrowse '%s'\n\n", VERSION, src_name); log_it(plog_global);
+				exit(ux_read_file(src_name, dest_name));
 				break;
 		default:
 				fprintf(stderr, "No mode selected, should never happen\n");

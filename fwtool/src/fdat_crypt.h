@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fdat_crypt.h" is part of fwtool (http://www.nex-hack.info)
 //
@@ -41,8 +41,11 @@
 #define	FDAT_IMAGE_BLOCK0_IDENT_MAGIC1_LEN	FDAT_IMAGE_MAGIC_LEN
 #define	FDAT_IMAGE_BLOCK0_IDENT_MAGIC1_OFFSET	(sizeof(FDAT_ENC_BLOCK_HDR)+FDAT_IMAGE_MAGIC_OFS)
 
+// for 3. gen modified encryption debug version
+#define FDAT_IMAGE_HEADER_LEN 0x0200
 
-extern	int	fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted, 
+
+extern	int	fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted,
 			unsigned char **pp_fdat_decrypted, size_t *psz_fdat_decrypted, FDC_METHOD *p_fdc_method);
 
 extern	int	fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_METHOD *p_fdc_method);

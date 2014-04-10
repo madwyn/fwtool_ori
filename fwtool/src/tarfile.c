@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "tarfile.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -28,6 +28,7 @@
 #define	TARFILE_C
 
 #include "config.h"
+#include "fwt_names.h"
 #include "fwt_util.h"
 #include <errno.h>
 
@@ -37,13 +38,10 @@
 #include "tarfile.h"
 
 
-#define	ENTRY_ATTR_FNAME	".attr_unpack.txt"
-
-
 static tar_handle
 _create_th(struct archive *a)
 {
-	tar_handle	retval = NULL;
+	tar_handle	retval=NULL;
 
 	if ((retval = malloc(sizeof(tar_handle_struct)))) {
 		memset((void *)retval, 0, sizeof(tar_handle_struct));
@@ -64,9 +62,9 @@ _free_th(tar_handle th)
 
 
 tar_handle
-tarfile_open(const char *fname)
+_tarfile_open(const char *fname)
 {
-	struct archive *a = NULL;
+	struct archive *a=NULL;
 
 	if ((a = archive_read_new())) {
 		archive_read_support_format_tar(a);
@@ -81,7 +79,7 @@ tarfile_open(const char *fname)
 
 
 void
-tarfile_close(tar_handle th)
+_tarfile_close(tar_handle th)
 {
 	if (th) {
 		if (th->a) {
@@ -97,10 +95,10 @@ tarfile_close(tar_handle th)
 int
 is_tarfile(const char *fname)
 {
-	tar_handle	th;
+	tar_handle	th=NULL;
 
-	if ((th = tarfile_open(fname))) {
-		tarfile_close(th);
+	if ((th = _tarfile_open(fname))) {
+		_tarfile_close(th);
 		return 1;
 	} else {
 		return 0;
@@ -108,87 +106,12 @@ is_tarfile(const char *fname)
 }
 
 
-int
-tarfile_find_first(tar_handle th, char *p_fname_buf, int sz_fname_buf, unsigned long *p_uncomp_size, unsigned int *p_crc32)
-{
-	// FIXME: can I seek back to first file??
-	return tarfile_find_next(th, p_fname_buf, sz_fname_buf, p_uncomp_size, p_crc32);
-}
-
-
-int
-tarfile_find_next(tar_handle th, char *p_fname_buf, int sz_fname_buf, unsigned long *p_uncomp_size, unsigned int *p_crc32)
-{
-	int	len;
-	struct archive_entry *entry;
-	int	ret;
-	const char	*p_entry_fname;
-
-	ret = archive_read_next_header(th->a, &entry);
-	if (ret == ARCHIVE_EOF) {
-		return 1;
-	}
-	if (ret != ARCHIVE_OK) {
-		return -1;
-	}
-
-	if (!(p_entry_fname = archive_entry_pathname(entry))) {
-		return -1;
-	}
-#if	0
-	// 'mode' is 'perm | filetype'
-	printf("FNAME: '%s'\n", p_entry_fname);
-	printf("\tUID: 0x%lx\n", (unsigned long)archive_entry_uid(entry));
-	printf("\tGID: 0x%lx\n", (unsigned long)archive_entry_gid(entry));
-	printf("\tPERM: 0x%lx\n", (unsigned long)archive_entry_perm(entry));
-	printf("\tINODE: 0x%lx\n", (unsigned long)(archive_entry_ino_is_set(entry) ? archive_entry_ino(entry) : -1));
-	printf("\tMODE: '%s'\n", archive_entry_strmode(entry));
-	printf("\tTYPE: 0x%lx\n", (unsigned long)archive_entry_filetype(entry));
-	printf("\tATIME/BTIME/CTIME/MTIME set: %d/%d/%d/%d\n",
-		archive_entry_atime_is_set(entry),
-		archive_entry_birthtime_is_set(entry),
-		archive_entry_ctime_is_set(entry),
-		archive_entry_mtime_is_set(entry));
-	printf("\tHARDLINK: '%s'\n", archive_entry_hardlink(entry));
-	printf("\tSYMLINK: '%s'\n", archive_entry_symlink(entry));
-	printf("\tDEV: %d (%d,%d)\n", archive_entry_dev_is_set(entry), archive_entry_rdevmajor(entry), archive_entry_rdevminor(entry));
-#endif
-	len = strlen(p_entry_fname);
-	if (len > (sz_fname_buf-1)) {
-		len = sz_fname_buf-1;
-	}
-	if (p_fname_buf) {
-		strncpy(p_fname_buf, p_entry_fname, len);
-		p_fname_buf[len] = '\0';
-	}
-	return 0;
-}
-
-
-int
-tarfile_list(tar_handle th)
-{
-	char	fname[256];
-	int	ret = 0;
-
-	if (!th) {
-		return 1;
-	}
-	ret = tarfile_find_first(th, fname, sizeof(fname)-1, NULL, NULL);
-	while(ret == 0) {
-		printf("FNAME: '%s'\n", fname);
-		ret = tarfile_find_next(th, fname, sizeof(fname)-1, NULL, NULL);
-	}
-	return ret;
-}
-
-
 static int
 _tarfile_extract_create_dir(char *path)
 {
+	int r=0;
 	struct stat st;
-	char *slash, *base;
-	int r;
+	char *slash=NULL, *base=NULL;
 
 	/* Check for special names and just skip them. */
 	slash = strrchr(path, '/');
@@ -231,8 +154,6 @@ _tarfile_extract_create_dir(char *path)
 		if (r != 0)
 			return r;
 	}
-	// FIXME: try real mode here??
-	//if (mkdir(path, 0777) == 0) {
 	if (mkdir(path) == 0) {
 		return 0;
 	}
@@ -250,65 +171,33 @@ _tarfile_extract_create_dir(char *path)
 }
 
 
-int
-_tarfile_create_entry_attributes(const char *dirname)
-{
-	FILE	*fh;
-	char	fname_buf[512];
-
-	sprintf(fname_buf, "%s/%s", dirname, ENTRY_ATTR_FNAME);
-
-	// create (and truncate if exists) new entry attributes file
-	if (!(fh = fopen(fname_buf, "w"))) {
-		return 1;
-	}
-	fclose(fh);
-	return 0;
-}
-
-
-int
-_tarfile_add_entry_attributes(const char *dirname, const char *entry_attr_string)
-{
-	FILE	*fh;
-	char	fname_buf[512];
-
-	sprintf(fname_buf, "%s/%s", dirname, ENTRY_ATTR_FNAME);
-
-	// append to existing file
-	if (!(fh = fopen(fname_buf, "a"))) {
-		return 1;
-	}
-	fprintf(fh, "%s\n", entry_attr_string);
-	fclose(fh);
-	return 0;
-}
-
-
 static int
-_tarfile_extract_current_entry(tar_handle th, const char *dirname_out, struct archive_entry *entry, int show_extract_names)
+_tarfile_extract_current_entry(tar_handle th, const char *dirname_out, struct archive_entry *entry, const char *fname_tar_attr)
 {
+	int	ret=0;
 	const char	*entry_fname = archive_entry_pathname(entry);
 	unsigned long	entry_uid = (unsigned long)archive_entry_uid(entry);
 	unsigned long	entry_gid = (unsigned long)archive_entry_gid(entry);
 	unsigned long	entry_mode = (unsigned long)archive_entry_mode(entry);
 	const char	*entry_modestr = archive_entry_strmode(entry);
-	char	entry_fullname[512] = {0};
-	char	parent_dirname[512] = {0};
-	char	entry_attr_string[512] = {0};
-	char	entry_specialinfo_str[512] = {0};
-	char	*p;
-	char	*p_entry_basename = NULL;
-	int	len;
-	int	is_dir = 0, is_special = 0;
-	int	ret;
-	FILE	*fh_out = NULL;
+	long	entry_atime = (long)archive_entry_atime(entry);
+	long	entry_ctime = (long)archive_entry_ctime(entry);
+	long	entry_mtime = (long)archive_entry_mtime(entry);
+	long	entry_btime = (long)archive_entry_birthtime(entry);
+	char	entry_fullname[_TMP_FNAME_BUFLEN] = {0};
+	char	parent_dirname[_TMP_FNAME_BUFLEN] = {0};
+	char	entry_attr_string[_TMP_FNAME_BUFLEN] = {0};
+	char	entry_specialinfo_str[_TMP_FNAME_BUFLEN] = {0};
+	char	*p=NULL;
+	char	*p_entry_basename=NULL;
+	//char	*p_entry_dir = NULL;
+	int	len=0, is_dir=0, is_special=0;
+	FILE	*fh_out=NULL, *fh_attr=NULL;
 
 	//
 	// NOTE: we *assume* here that "entry_fname" has forward-slashes delimiting the directory
 	// (basename of files can have '\' (esp in /dev/), so don't translate)
 	//
-//printf("FNAME: '%s'\n", entry_fname);
 	if (dirname_out) {
 		sprintf(entry_fullname, "%s/%s", dirname_out, entry_fname);
 	} else {
@@ -369,28 +258,23 @@ _tarfile_extract_current_entry(tar_handle th, const char *dirname_out, struct ar
 		break;
 	}
 
-	sprintf(entry_attr_string, "%s|%s|UID:%lu|GID:%lu|MODE:%lu|%s", entry_modestr, p_entry_basename, entry_uid, entry_gid, entry_mode, entry_specialinfo_str);
-#if	0
-	printf("ATTR: '%s'\n", entry_attr_string);
-	printf("FNAME: '%s'\n", entry_fname);
-	printf("MODE : '%s'\n", entry_modestr);
-	printf("\tFULL: '%s'\n", entry_fullname);
-	printf("\t DIR: '%s'\n", parent_dirname);
-	printf("\tBASE: '%s'\n", p_entry_basename);
+	sprintf(entry_attr_string, "|%s|UID:%lu|GID:%lu|MODE:%lu|ATIME:%li|CTIME:%li|MTIME:%li|BTIME:%li|%s|%s|%s|%s|", \
+			entry_modestr, entry_uid, entry_gid, entry_mode, entry_atime, entry_ctime, entry_mtime, entry_btime, \
+			entry_specialinfo_str, entry_fname, parent_dirname, p_entry_basename);
 
-	exit(0);
-#endif
 	if (parent_dirname[0]) {
 		if (_tarfile_extract_create_dir(parent_dirname) != 0) {
 			fprintf(stderr, "Error creating parent dir: '%s'!\n", parent_dirname);
 			goto exit_err;
 		}
-		if (_tarfile_add_entry_attributes(parent_dirname, entry_attr_string) != 0) {
+		if (!(fh_attr = fopen(fname_tar_attr, "a"))) {
 			fprintf(stderr, "Error storing entry attributes for file '%s'\n", entry_fname);
 			goto exit_err;
 		}
+		fprintf(fh_attr, "%s\n", entry_attr_string);
+		fclose(fh_attr);
 	}
-	if (show_extract_names) {
+	if (fwt_verbose_global) {
 		sprintf(plog_global, "Extracting %s\n", entry_fullname); log_it(plog_global);
 	}
 	if (is_dir) {
@@ -398,10 +282,6 @@ _tarfile_extract_current_entry(tar_handle th, const char *dirname_out, struct ar
 		// (with an empty attributes file)
 		if (_tarfile_extract_create_dir(entry_fullname) != 0) {
 			fprintf(stderr, "Error creating parent dir: '%s'!\n", parent_dirname);
-			goto exit_err;
-		}
-		if (_tarfile_create_entry_attributes(entry_fullname) != 0) {
-			fprintf(stderr, "Error storing entry attributes for file '%s'\n", entry_fname);
 			goto exit_err;
 		}
 	} else if (!is_special) {
@@ -441,8 +321,6 @@ _tarfile_extract_current_entry(tar_handle th, const char *dirname_out, struct ar
 		fclose(fh_out);
 #endif
 	}
-
-
 	goto exit_ok;
 
 exit_err:
@@ -460,19 +338,24 @@ exit_common:
 
 
 int
-tarfile_extract_all(const char *fname_tar, const char *dirname_out, int show_extract_names)
+tarfile_extract_all(const char *fname_tar, const char *dirname_out, const char *fname_tar_attr)
 {
-	tar_handle	th = NULL;
-	int	ret;
-	struct archive_entry *entry = NULL;
-	const char	*p_entry_fname = NULL;
+	int	ret=0;
+	tar_handle	th=NULL;
+	FILE	*fh_attr=NULL;
+	struct archive_entry *entry=NULL;
+	const char	*p_entry_fname=NULL;
 
-	if (!(th = tarfile_open(fname_tar))) {
+	if (!(th = _tarfile_open(fname_tar))) {
 		fprintf(stderr, "Error opening tar file '%s'!\n", fname_tar);
 		goto exit_err;
 	}
+	if (!(fh_attr = fopen(fname_tar_attr, "w"))) {
+		fprintf(stderr, "tarfile_create_entry_attributes() returned error!\n");
+		goto exit_err;
+	}
+	else fclose(fh_attr);
 
-	//(void)mkdir(dirname_out, 0777);
 	mkdir(dirname_out);
 	while(1) {
 		ret = archive_read_next_header(th->a, &entry);
@@ -484,16 +367,16 @@ tarfile_extract_all(const char *fname_tar, const char *dirname_out, int show_ext
 			goto exit_err;
 		}
 		p_entry_fname = archive_entry_pathname(entry);
-		if (_tarfile_extract_current_entry(th, dirname_out, entry, show_extract_names) != 0) {
+		if (_tarfile_extract_current_entry(th, dirname_out, entry, fname_tar_attr) != 0) {
 			fprintf(stderr, "Error extracting file '%s' from tar!\n", p_entry_fname);
 			goto exit_err;
 		}
 	}
-	tarfile_close(th);
+	_tarfile_close(th);
 	goto exit_ok;
 
 exit_err:
-	if (th) tarfile_close(th);
+	if (th) _tarfile_close(th);
 	ret = 1;
 	goto exit_common;
 
@@ -501,5 +384,113 @@ exit_ok:
 	ret = 0;
 	// fallthru
 exit_common:
+	return ret;
+}
+
+
+// from libarchive/archiv.h:
+/*-
+ * To create an archive:
+ *   1) Ask archive_write_new for an archive writer object.
+ *   2) Set any global properties.  In particular, you should set
+ *      the compression and format to use.
+ *   3) Call archive_write_open to open the file (most people
+ *       will use archive_write_open_file or archive_write_open_fd,
+ *       which provide convenient canned I/O callbacks for you).
+ *   4) For each entry:
+ *      - construct an appropriate struct archive_entry structure
+ *      - archive_write_header to write the header
+ *      - archive_write_data to write the entry data
+ *   5) archive_write_close to close the output
+ *   6) archive_write_free to cleanup the writer and release resources
+ */
+
+// from minitar.c, modified
+int
+tarfile_create_all(const char *fname_tar, const char *dirname_in)
+{
+	int	ret=0;
+	char buff[TAR_IOBUF_SIZE]="";
+	struct archive *a=NULL;
+	struct archive_entry *entry=NULL;
+	ssize_t len=0;
+	FILE	*fd=NULL;
+
+	a = archive_write_new();
+	archive_write_add_filter_none(a);
+	archive_write_set_format_ustar(a);
+	archive_write_open_filename(a, fname_tar);
+
+	if (dirname_in != NULL) {
+		struct archive *disk = archive_read_disk_new();
+		int r;
+		size_t dirlen = strlen(dirname_in)+1;
+
+		r = archive_read_disk_open(disk, dirname_in);
+		if (r != ARCHIVE_OK) {
+			fprintf(stderr, "tarfile_create: %s\n", archive_error_string(disk));
+			goto exit_err;
+		}
+
+		for (;;) {
+			const char *filename;
+
+			entry = archive_entry_new();
+			r = archive_read_next_header2(disk, entry);
+			if (r == ARCHIVE_EOF)
+				break;
+			if (r != ARCHIVE_OK) {
+				fprintf(stderr, "tarfile_create: %s\n", archive_error_string(disk));
+				goto exit_err;
+			}
+			archive_read_disk_descend(disk);
+
+			//TODO set attributes
+			// dont put full pathname into tar
+			filename = archive_entry_pathname(entry);
+			archive_entry_set_pathname(entry, filename + dirlen);
+			if (fwt_verbose_global) {
+				sprintf(plog_global, "a %s\n", archive_entry_pathname(entry)); log_it(plog_global);
+			}
+
+			r = archive_write_header(a, entry);
+			if (r < ARCHIVE_OK) {
+				fprintf(stderr, "tarfile_create: %s\n", archive_error_string(a));
+				sprintf(plog_global, "tarfile_create: %s\n", archive_error_string(a)); log_it(plog_global);
+			}
+			if (r == ARCHIVE_FATAL) {
+				fprintf(stderr, "tarfile_create: Fatal error creating tar!\n");
+				goto exit_err;
+			}
+			if (r > ARCHIVE_FAILED) {
+				fd = fopen(archive_entry_sourcepath(entry), "rb");
+				len = fread(buff, 1, sizeof(buff), fd);
+				while (len > 0) {
+					archive_write_data(a, buff, len);
+					len = fread(buff, 1, sizeof(buff), fd);
+				}
+				fclose(fd);
+			}
+			archive_entry_free(entry);
+		}
+		archive_read_close(disk);
+		archive_read_free(disk);
+	}
+	goto exit_ok;
+
+exit_err:
+// TODO: handle archive_read_*(disk) ?
+	ret = 1;
+	goto exit_common;
+
+exit_ok:
+	ret = 0;
+	// fallthru
+exit_common:
+	archive_write_close(a);
+	archive_write_free(a);
+	if (fwt_verbose_global) {
+		sprintf(plog_global, "\n"); log_it(plog_global);
+	}
 	return ret;
 }

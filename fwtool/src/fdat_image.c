@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fdat_image.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -41,10 +41,10 @@
 int
 fdat_read_image_header(const char *fname_fdat, FDAT_IMAGE_HEADER *p_image_hdr)
 {
-	FILE	*fh;
+	FILE	*fh=NULL;
 	FDAT_IMAGE_HEADER	l_hdr;
-	FDAT_FS_IMAGE_DESC	*p_desc;
-	int	i;
+	FDAT_FS_IMAGE_DESC	*p_desc=NULL;
+	int	i=0;
 
 	if (!(fh = fopen(fname_fdat, "rb"))) {
 		fprintf(stderr, "Failed to open FDAT image '%s'!\n", fname_fdat);
@@ -60,8 +60,8 @@ fdat_read_image_header(const char *fname_fdat, FDAT_IMAGE_HEADER *p_image_hdr)
 			fprintf(stderr, "Invalid FDAT image header!\n");
 			return 1;
 	}
-	// endian-convert header
 
+	// endian-convert header
 	LE32toHost((u8 *)&l_hdr.fih_header_crc);
 	LE32toHost((u8 *)&l_hdr.fih_fw_offset);
 	LE32toHost((u8 *)&l_hdr.fih_fw_length);
@@ -82,10 +82,10 @@ fdat_read_image_header(const char *fname_fdat, FDAT_IMAGE_HEADER *p_image_hdr)
 static int
 _fdat_extract_image(const char *fname_in, unsigned int f_offset, unsigned int f_len, const char *fname_out)
 {
-	int	ret;
-	FILE	*fh_in = NULL, *fh_out = NULL;
-	unsigned char	*p_iobuf = NULL;
-	unsigned int	this_nbytes;
+	int	ret=0;
+	FILE	*fh_in=NULL, *fh_out=NULL;
+	unsigned char	*p_iobuf=NULL;
+	unsigned int	this_nbytes=0;
 
 	if (!(fh_in = fopen(fname_in, "rb"))) {
 		goto exit_err;
@@ -134,8 +134,8 @@ exit_common:
 int
 fdat_extract_firmware_image(const char *fname_fdat, const char *fname_fw_image)
 {
+	int	ret=0;
 	FDAT_IMAGE_HEADER	fdat_hdr;
-	int	ret = 0;
 
 	if (fdat_read_image_header(fname_fdat, &fdat_hdr)) {
 		goto exit_err;
@@ -176,7 +176,7 @@ int
 fdat_fs_image_length(const char *fname_fdat, int image_idx)
 {
 	FDAT_IMAGE_HEADER	fdat_hdr;
-	FDAT_FS_IMAGE_DESC	*p_desc;
+	FDAT_FS_IMAGE_DESC	*p_desc=NULL;
 
 	if (fdat_read_image_header(fname_fdat, &fdat_hdr)) {
 		return -1;
@@ -192,9 +192,9 @@ fdat_fs_image_length(const char *fname_fdat, int image_idx)
 int
 fdat_extract_fs_image(const char *fname_fdat, int image_idx, const char *fname_fs_image)
 {
+	int	ret=0;
 	FDAT_IMAGE_HEADER	fdat_hdr;
-	int	ret = 0;
-	FDAT_FS_IMAGE_DESC	*p_desc;
+	FDAT_FS_IMAGE_DESC	*p_desc=NULL;
 
 	if (fdat_read_image_header(fname_fdat, &fdat_hdr)) {
 		goto exit_err;
@@ -205,9 +205,8 @@ fdat_extract_fs_image(const char *fname_fdat, int image_idx, const char *fname_f
 
 	p_desc = &fdat_hdr.fih_fs_image_info[image_idx];
 
-	// some firmware images seem to have a zero-length second fw image
-	// (as opposed to setting # images to '1'), so return "ok"
-	// if length is zero (and don't create any output file)
+	// some firmware images seem to have a zero-length second fw image (as opposed to setting
+	// # images to '1'), so return "ok" if length is zero (and don't create any output file)
 	if (!p_desc->ffid_fs_length) {
 		goto exit_ok;
 	}
@@ -232,10 +231,10 @@ exit_common:
 int
 fdat_header_tofile(const char *fname_fdat, const char *fname_fdat_header)
 {
+	int	ret=0;
 	FDAT_IMAGE_HEADER	fdat_hdr;
-	FDAT_FS_IMAGE_DESC	*p_desc;
+	FDAT_FS_IMAGE_DESC	*p_desc=NULL;
 	MODEL_TYPE	model_name;
-	int	ret = 0;
 
 	if (fdat_read_image_header(fname_fdat, &fdat_hdr)) {
 		return -1;
@@ -268,16 +267,16 @@ exit_common:
 int
 fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *dirname_parts, const int fwt_majorver, const int fwt_minorver)
 {
-	int	ret = 0;
+	int	ret=0;
 	FDAT_IMAGE_HEADER	fdat_hdr;
-	FDAT_FS_IMAGE_DESC	*p_desc = NULL;
+	FDAT_FS_IMAGE_DESC	*p_desc=NULL;
 	MODEL_TYPE	model_name;
-	FILE	*fh_in = NULL, *fh_out = NULL;
+	FILE	*fh_in=NULL, *fh_out=NULL;
 	int fs_img_count=0, num_fs=0;
 	unsigned int	fdat_crc=0;
 	size_t	head_len=0, filesize=0, fsimg_offset=0, outfilesize=0;
-	unsigned char	*p_block_buf = NULL;
-	char	fname_fsimg[MAXPATH] = "";
+	unsigned char	*p_block_buf=NULL;
+	char	fname_fsimg[MAXPATH]="";
 
 
     // read FDAT header from original file
@@ -365,9 +364,9 @@ fdat_repack(const char *fname_fdat, const char *fname_fdat_repack, const char *d
 
 	// if not set from option, increment minor version, or major if overflow
 	if ((fwt_majorver == -1) && (fwt_minorver == -1)) {
-		if (fdat_hdr.fih_version_minor < FWT_MAXMINORVER) fdat_hdr.fih_version_minor += fdat_hdr.fih_version_minor;
+		if (fdat_hdr.fih_version_minor < FWT_MAXMINORVER) fdat_hdr.fih_version_minor = fdat_hdr.fih_version_minor+1;
 		else {
-			fdat_hdr.fih_version_major += fdat_hdr.fih_version_major;
+			fdat_hdr.fih_version_major = fdat_hdr.fih_version_major+1;
 			fdat_hdr.fih_version_minor = 0;
 		}
 	}
@@ -407,7 +406,7 @@ exit_err:
 	ret = 1;
 	goto exit_common;
 exit_ok:
-	sprintf(plog_global, "Done\n"); log_it(plog_global);
+	sprintf(plog_global, "Done\n\n"); log_it(plog_global);
 	ret = 0;
 	// fallthru
 exit_common:

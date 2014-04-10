@@ -330,10 +330,10 @@ static const uint32_t RCON[10] =
  * Forward S-box & tables
  */
 static unsigned char FSb[256];
-static uint32_t FT0[256]; 
-static uint32_t FT1[256]; 
-static uint32_t FT2[256]; 
-static uint32_t FT3[256]; 
+static uint32_t FT0[256];
+static uint32_t FT1[256];
+static uint32_t FT2[256];
+static uint32_t FT3[256];
 
 /*
  * Reverse S-box & tables
@@ -781,7 +781,7 @@ int aes_crypt_cbc( aes_context *ctx,
     {
         if( padlock_xcryptcbc( ctx, mode, length, iv, input, output ) == 0 )
             return( 0 );
-        
+
         // If padlock data misaligned, we just fall back to
         // unaccelerated mode
         //
@@ -1338,4 +1338,3 @@ int aes_self_test( int verbose )
 }
 
 #endif
-

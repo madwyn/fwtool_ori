@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "lzpt_io.h" is part of fwtool (http://www.nex-hack.info)
 //
@@ -28,8 +28,9 @@
 #ifndef LZPT_IO_H
 #define	LZPT_IO_H
 
+
 extern	int	lzpt_read_toc(FILE *fh_in, unsigned char **pp_toc, int *pnum_entries, int *pmax_dblksz);
-extern	int	lzpt_read_block(FILE *fh_in, int block_num, 
+extern	int	lzpt_read_block(FILE *fh_in, int block_num,
 		unsigned char *p_toc, size_t toc_entries, unsigned char **pp_block_data, size_t *psz_block);
 extern	int	lzpt_decompress_block(unsigned char *p_block_in, size_t sz_block_in, int sz_mxdblk_in,
 		unsigned char **pp_block_out, size_t *psz_block_out);
@@ -38,5 +39,5 @@ extern	void	lzpt_free_toc(unsigned char *p_toc, size_t toc_nentries);
 extern	int	is_lzpt_file(const char *fname);
 extern	int	lzpt_decompress_file(const char *fname_in, const char *fname_out);
 
-#endif // LZPT_IO_H
 
+#endif // LZPT_IO_H

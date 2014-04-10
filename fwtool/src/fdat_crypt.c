@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fdat_crypt.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -34,14 +34,16 @@
 
 #include "fdat_crypt.h"
 
+#include "zlib.h"		// for crc-32
+
 
 FDC_METHOD
 fdat_image_guess_crypto_method(FDC *p_ctx, unsigned char *p_databuf, int nbytes)
 {
-	FDC_METHOD	fdcm;
 	FDC	tmp_ctx;
-	unsigned char	*p_blockbuf = NULL;
-	int	block_len;
+	FDC_METHOD	fdcm;
+	unsigned char	*p_blockbuf=NULL;
+	int	block_len=0;
 
 	p_ctx->fdc_method = FDCM_UNKNOWN;
 
@@ -84,54 +86,43 @@ exit_common:
 int
 fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted, unsigned char **pp_fdat_decrypted, size_t *psz_fdat_decrypted, FDC_METHOD *p_fdc_method)
 {
+	int	retval=0;
 	FDC	fdc;
 	FDC_METHOD	fdc_method;
-	size_t	block_len, block_len_decrypted;
-	int	nblocks;
-	unsigned char	*p_fdat_decrypted = NULL;
-	size_t	sz_fdat_decrypted;
-	int	retval;
-	unsigned char	*p_crypt_io, *p_dec_out;
-	int	block;
-	FDAT_ENC_BLOCK_HDR	*p_blk_hdr;
-	unsigned short	block_hdr_csum, block_hdr_len_and_flags;
-	unsigned short	calc_csum;
-	int	last_block;
-	size_t	sz_decrypt_actual;
-	size_t	this_len_decrypted;
-
+	FDAT_ENC_BLOCK_HDR	*p_blk_hdr=NULL;
+	unsigned char	*p_fdat_decrypted=NULL, *p_crypt_io=NULL, *p_dec_out=NULL;
+	size_t	block_len=0, block_len_decrypted=0;
+	size_t	sz_fdat_decrypted=0, sz_decrypt_actual=0, this_len_decrypted=0;
+	int	block=0, nblocks=0, last_block=0;
+	unsigned short	block_hdr_csum=0, block_hdr_len_and_flags=0, calc_csum=0;
 
 	*pp_fdat_decrypted = NULL;
 	*psz_fdat_decrypted = 0;
 	if (p_fdc_method) *p_fdc_method = FDCM_UNKNOWN;
 
 	//
-	// the FDAT region is made up of one or more 1000-byte chunks
-	// of data.
+	// the FDAT region is made up of one or more 1000 or 1024 byte chunks of data.
 	//
-	// we'll read the data, 1000 bytes at a time, then decrypt
-	// the 1000 bytes.
-	//
+	// we'll read the data, 1000 or 1024 bytes at a time, then decrypt the 1000 or 1024 bytes.
 	// the decrypted data will then look like:
 	//
 	//	- header value: 16-bit checksum (stored little-endian) of all remaining 16-bit values following
 	//	- header value: 16-bit 'actual length' (stored little-endian) of the data that follows
 	//	  (if less than a full block)
 	//	  if the high-bit of this value is set, then it's the last chunk of the file
-	//	- up to 996 (1000-2-2) bytes of data ('actual length' may say less)
+	//	- up to 996 (1000-2-2) or 1020 (1024-2-2) bytes of data ('actual length' may say less)
 	//
-	// we perform a checksum over all 16-bit values *except* for the first one (which
-	// holds the expected checksum), then compare to the expected checksum.  since
-	// a full chunk is 1000 bytes, then the number of 16-bit values added together
-	// is: ((1000-2)/2) = 499 'words'.
+	// we perform a checksum over all 16-bit values *except* for the first one (which holds the expected
+	// checksum), then compare to the expected checksum.  since a full chunk is 1000 or 1024 bytes, then
+	// the number of 16-bit values added together is: ((1000-2)/2)=499 or ((1024-2)/2)=511 'words'.
 	//
-	// NOTE: we always calculate the checksum over the entire 499-word region
-	// (even if the 'actual length' says the size is less) - this may or may not
-	// be correct (could need tweaking later if a different firmware image
-	// fails to checksum correctly)
+	// NOTE: we always calculate the checksum over the entire 499-word region (even if the
+	// 'actual length' says the size is less) - this may or may not be correct (could need tweaking
+	// later if a different firmware image fails to checksum correctly)
 	//
 	// if the checksum matches, then we'll write 'actual length' bytes of data (starting
-	// after the two 'header' values) to the output file.
+	// after the two 'header' values) to the output file. If a 3.gen fw is detected, only the header is
+	// written, as the following data uses a different encryption.
 	//
 	fdc_init(&fdc, 0, FDCM_UNKNOWN);
 	if ((fdc_method = fdat_image_guess_crypto_method(&fdc, p_fdat_encrypted, sz_fdat_encrypted)) == FDCM_UNKNOWN) {
@@ -142,13 +133,10 @@ fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted, u
 
 	block_len = fdc_block_len(&fdc);
 
-	//
-	// if the overall FDAT record length isn't an even multiple of block_len,
-	// return an error
-	//
+	// if the overall FDAT record length isn't an even multiple of block_len, return an error
 	if (sz_fdat_encrypted % block_len) {
 		fprintf(stderr,
-			"decrypt_fdat_image(): FDAT record length (0x%x) not a multiple of decrypt block length (%u)!\n",
+			"fdat_decrypt_buffer(): FDAT record length (0x%x) not a multiple of decrypt block length (%u)!\n",
 			sz_fdat_encrypted, block_len);
 		goto exit_err;
 	}
@@ -173,8 +161,7 @@ fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted, u
 	for (block = 0; block < nblocks; block++) {
 		p_blk_hdr = (FDAT_ENC_BLOCK_HDR *)p_crypt_io;
 
-		// ((block_hdr[3] << 8) | block_hdr[2]) is the # of bytes to write
-		// high bit of block_hdr[3] indicates last block?
+		// ((block_hdr[3] << 8) | block_hdr[2]) is the # of bytes to write high bit of block_hdr[3] indicates last block?
 		block_hdr_csum = readLE16((u8 *)&p_blk_hdr->hdr_csum);
 
 		block_hdr_len_and_flags = readLE16((u8 *)&p_blk_hdr->hdr_len_and_flags);
@@ -183,19 +170,20 @@ fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted, u
 		this_len_decrypted = (block_hdr_len_and_flags & 0xfff);
 		if (this_len_decrypted > block_len_decrypted) {
 			fprintf(stderr,
-				"decrypt_fdat_image(blocknum=%u): Bad block write length (%u)!\n",
+				"fdat_decrypt_buffer(blocknum=%u): Bad block write length (%u)!\n",
 				block, this_len_decrypted);
 			goto exit_err;
 		}
+//debug
 // fprintf(plog_global, "block: %04x, hdr_csum: %04x, len_and_flags: %04x\n", block, block_hdr_csum, block_hdr_len_and_flags); log_it(plog_global);
-		// calculate checksum, over everything but the first word of the
-		// block header (which is the checksum).  confirm it matches the
-		// value stored in the header
+//debug
+		// calculate checksum, over everything but the first word of the block header
+		// (which is the checksum). confirm it matches the value stored in the header
 		calc_csum = calc_csum_16bitLE_words((u16 *)(&p_crypt_io[2]), ((block_len-2)>>1));
 
 		if (calc_csum != block_hdr_csum) {
 			fprintf(stderr,
-				"decrypt_fdat_image(blocknum=%u): block checksum mismatch (expected: %04x, calculated: %04x)!\n",
+				"fdat_decrypt_buffer(blocknum=%u): block checksum mismatch (expected: %04x, calculated: %04x)!\n",
 				block, block_hdr_csum, calc_csum);
 			goto exit_err;
 		}
@@ -233,23 +221,23 @@ exit_common:
 int
 fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_METHOD *p_fdc_method)
 {
-	int	retval;
+	int	retval=0;
 	FDC	fdc;
 	FDC_METHOD	fdc_method;
-	FDAT_ENC_BLOCK_HDR	*p_blk_hdr;
-	FILE	*fh_in = NULL, *fh_out = NULL;
-	size_t	max_block_len, block_len, filesize, block_len_decrypted, this_len_decrypted;
-	int	nblocks, block;
-	unsigned char	*p_block_buf = NULL;
-	unsigned short	block_hdr_csum, block_hdr_len_and_flags, calc_csum;
-	// int	last_block;
+	FDAT_ENC_BLOCK_HDR	*p_blk_hdr=NULL;
+	FILE	*fh_in=NULL, *fh_out=NULL;
+	size_t	max_block_len=0, block_len=0, filesize=0, block_len_decrypted=0, this_len_decrypted=0;
+	int	nblocks=0, block=0, is3gen=0;
+	unsigned char	*p_block_buf=NULL;
+	unsigned short	block_hdr_csum=0, block_hdr_len_and_flags=0, calc_csum=0;
+
 
 	if (p_fdc_method) *p_fdc_method = FDCM_UNKNOWN;
 
 	sprintf(plog_global, "Reading FDAT input file: '%s'\n", fdat_in_fname); log_it(plog_global);
 
 	if (!(fh_in = fopen(fdat_in_fname, "rb"))) {
-		fprintf(stderr, "decrypt_fdat_file(): Error opening input file '%s'!\n", fdat_in_fname);
+		fprintf(stderr, "fdat_decrypt_file(): Error opening input file '%s'!\n", fdat_in_fname);
 		goto exit_err;
 	}
 
@@ -259,24 +247,21 @@ fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_MET
 	// 'guess' the  crypto method using that buffer. we go back and decrypt the file.
 	max_block_len = fdc_max_block_len(&fdc);
 	if (!(p_block_buf = malloc(max_block_len))) {
-		fprintf(stderr, "decrypt_fdat_file(): Failed to allocate block buffer!\n");
+		fprintf(stderr, "fdat_decrypt_file(): Failed to allocate block buffer!\n");
 		goto exit_err;
 	}
 
 	// get total input file size
-	fseek(fh_in, 0L, SEEK_END);
-	filesize = ftell(fh_in);
-	fseek(fh_in, 0L, SEEK_SET);
-
+	fseek(fh_in, 0L, SEEK_END); filesize = ftell(fh_in); fseek(fh_in, 0L, SEEK_SET);
 	if (max_block_len > filesize) max_block_len = filesize;
 
 	if (fread(p_block_buf, 1, max_block_len, fh_in) != max_block_len) {
-		fprintf(stderr, "decrypt_fdat_file(): Failed to read initial block!\n");
+		fprintf(stderr, "fdat_decrypt_file(): Failed to read initial block!\n");
 		goto exit_err;
 	}
 
 	if ((fdc_method = fdat_image_guess_crypto_method(&fdc, p_block_buf, max_block_len)) == FDCM_UNKNOWN) {
-		fprintf(stderr, "decrypt_fdat_file(): Could not determine FDAT crypto method!\n");
+		fprintf(stderr, "fdat_decrypt_file(): Could not determine FDAT crypto method!\n");
 		goto exit_err;
 	}
 	fdc_set_crypto_method(&fdc, fdc_method, 1);
@@ -292,7 +277,7 @@ fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_MET
 	// if the overall FDAT record length isn't an even multiple of block_len, return an error
 	if (filesize % block_len) {
 		fprintf(stderr,
-			"decrypt_fdat_file(): FDAT file length (0x%x) not a multiple of decrypt block length (%u)!\n",
+			"fdat_decrypt_file(): FDAT file length (0x%x) not a multiple of decrypt block length (%u)!\n",
 			filesize, block_len);
 		goto exit_err;
 	}
@@ -300,7 +285,7 @@ fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_MET
 	sprintf(plog_global, "Writing FDAT output to '%s' ... ", fdat_out_fname); log_it(plog_global);
 
 	if (!(fh_out = fopen(fdat_out_fname, "wb"))) {
-		fprintf(stderr, "decrypt_fdat_file(): Error creating output file '%s'!\n", fdat_out_fname);
+		fprintf(stderr, "fdat_decrypt_file(): Error creating output file '%s'!\n", fdat_out_fname);
 		goto exit_err;
 	}
 
@@ -309,7 +294,7 @@ fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_MET
 		p_blk_hdr = (FDAT_ENC_BLOCK_HDR *)p_block_buf;
 
 		if (fread(p_block_buf, 1, block_len, fh_in) != block_len) {
-			fprintf(stderr, "decrypt_fdat_file(): Failed to read input block #%d!\n", block);
+			fprintf(stderr, "fdat_decrypt_file(): Failed to read input block #%d!\n", block);
 			goto exit_err;
 		}
 //debug
@@ -321,41 +306,57 @@ fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_MET
 			fprintf(stderr, "fdc_cipher_blocks() returned error!\n");
 			goto exit_err;
 		}
-//debug
-//if(block > nblocks-3) {for(int j=0;j<1024;j=j+32) {sprintf(plog_global, "\n%04x:", j);log_it(plog_global);for(int k=0;k<32;k++) {sprintf(plog_global, " %02x",p_block_buf[j+k]);log_it(plog_global);}}}
-//debug
 
 		// ((block_hdr[3] << 8) | block_hdr[2]) is the # of bytes to write
 		// high bit of block_hdr[3] indicates last block?
 		block_hdr_csum = readLE16((u8 *)&p_blk_hdr->hdr_csum);
 
 		block_hdr_len_and_flags = readLE16((u8 *)&p_blk_hdr->hdr_len_and_flags);
-		// last_block = ((block_hdr_len_and_flags & 0x8000) != 0);
 
-		this_len_decrypted = (block_hdr_len_and_flags & 0xfff);
-		if (this_len_decrypted > block_len_decrypted) {
+		this_len_decrypted = (block_hdr_len_and_flags & 0x0fff);
+		if (is3gen == 0 && this_len_decrypted > block_len_decrypted) {
 			fprintf(stderr,
-				"decrypt_fdat_image(blocknum=%u): Bad block write length (%u)!\n",
+				"fdat_decrypt_file(blocknum=%u): Bad block write length (%u)!\n",
 				block, this_len_decrypted);
 			goto exit_err;
 		}
-//debug
-//sprintf(plog_global, "\nblock: %04x, hdr_csum: %04x, len_and_flags: %04x\n", block, block_hdr_csum, block_hdr_len_and_flags); log_it(plog_global);
-//debug
-		// calculate checksum, over everything but the first word of the
-		// block header (which is the checksum).  confirm it matches the
-		// value stored in the header
+		else {
+		}
+		// calculate checksum, over everything but the first word of the block header
+		// (which is the checksum).  confirm it matches the value stored in the header
 		calc_csum = calc_csum_16bitLE_words((u16 *)(&p_block_buf[2]), ((block_len-2)>>1));
 
 		if (calc_csum != block_hdr_csum) {
-			fprintf(stderr,
-				"decrypt_fdat_image(blocknum=%u): block checksum mismatch (expected: %04x, calculated: %04x)!\n",
-				block, block_hdr_csum, calc_csum);
-			goto exit_err;
+				if (*(int*)&p_block_buf[FDAT_IMAGE_HEADER_LEN] != 0) {
+					unsigned int	fdath_crc=0;
+
+					*(int*)&p_block_buf[FDAT_IMAGE_HEADER_LEN] = 0x00000000;
+					fdath_crc = crc32(fdath_crc, p_block_buf+sizeof(FDAT_ENC_BLOCK_HDR)+FDAT_IMAGE_MAGIC_LEN+sizeof(fdath_crc),
+										FDAT_IMAGE_HEADER_LEN-FDAT_IMAGE_MAGIC_LEN-sizeof(fdath_crc));
+					if (fdath_crc != *(int*)&p_block_buf[sizeof(FDAT_ENC_BLOCK_HDR)+FDAT_IMAGE_MAGIC_LEN]) {
+						fprintf(stderr,
+							"fdat_decrypt_file_3gen(blocknum=%u): header crc32 mismatch (expected: %08x, calculated: %08x)!\n",
+							block, *(int*)&p_block_buf[sizeof(FDAT_ENC_BLOCK_HDR)+FDAT_IMAGE_MAGIC_LEN], fdath_crc);
+						goto exit_err;
+					}
+					else {
+						sprintf(plog_global,"\n\n3. generation firmware: only FDAT_header decryption possible !\n\n"); log_it(plog_global);
+						fprintf(stderr,	"\n3. generation firmware: only FDAT_header decryption possible !\n\n");
+						is3gen = 1;
+						nblocks = 1;	// only first half of first block is encrypted with 2.gen aes key
+										// payload of FDAT uses new key and can not be decrypted
+					}
+				}
+				else {
+					fprintf(stderr,
+						"fdat_decrypt_file(blocknum=%u): block checksum mismatch (expected: %04x, calculated: %04x)!\n",
+						block, block_hdr_csum, calc_csum);
+					goto exit_err;
+				}
 		}
 
 		if (fwrite((void *)(&p_blk_hdr[1]), 1, this_len_decrypted, fh_out) != this_len_decrypted) {
-			fprintf(stderr, "decrypt_fdat_file(): Failed to write output block #%d!\n", block);
+			fprintf(stderr, "fdat_decrypt_file(): Failed to write output block #%d!\n", block);
 			goto exit_err;
 		}
 	}
@@ -390,12 +391,11 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 {
 	int	retval=0;
 	FDC	fdc;
-	FDC_METHOD	fdc_method = FDCM_UNKNOWN;
-	// FDAT_ENC_BLOCK_HDR	*p_blk_hdr;
-	FILE	*fh_check = NULL, *fh_in = NULL, *fh_out = NULL;
+	FDC_METHOD	fdc_method=FDCM_UNKNOWN;
+	FILE	*fh_check=NULL, *fh_in=NULL, *fh_out=NULL;
 	size_t	max_block_len=0, block_len=0, filesize=0, block_len_decrypted=0, this_len_decrypted=0, this_len_encrypted=0;
 	int nblocks=0, block=0, last_block=0, pad=0;
-	unsigned char	*p_block_buf = NULL;
+	unsigned char	*p_block_buf=NULL;
 	unsigned short	calc_csum=0;
 	u16 highb=0;
 
@@ -405,13 +405,13 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 	// we read a block of data from encrypted FDAT.bin to 'guess' the crypto method using that buffer.
 	// TODO find better method using content of FDAT.dec file
 	if (!(fh_check = fopen(fdat_check_fname, "rb"))) {
-		fprintf(stderr, "decrypt_fdat_file(): Error opening FDAT bin file '%s'!\n", fdat_check_fname);
+		fprintf(stderr, "fdat_encrypt_file(): Error opening FDAT bin file '%s'!\n", fdat_check_fname);
 		goto exit_err;
 	}
 	fdc_init(&fdc, 0, FDCM_UNKNOWN);
 	max_block_len = fdc_max_block_len(&fdc);
 	if (!(p_block_buf = malloc(max_block_len))) {
-		fprintf(stderr, "encrypt_fdat_file(): Failed to allocate block buffer for guess!\n");
+		fprintf(stderr, "fdat_encrypt_file(): Failed to allocate block buffer for guess!\n");
 		goto exit_err;
 	}
 	fseek(fh_check, 0L, SEEK_END);
@@ -419,11 +419,11 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 	fseek(fh_check, 0L, SEEK_SET);
 	if (max_block_len > filesize) max_block_len = filesize;
 	if (fread(p_block_buf, 1, max_block_len, fh_check) != max_block_len) {
-		fprintf(stderr, "encrypt_fdat_file(): Failed to read initial block for guess!\n");
+		fprintf(stderr, "fdat_encrypt_file(): Failed to read initial block for guess!\n");
 		goto exit_err;
 	}
 	if ((fdc_method = fdat_image_guess_crypto_method(&fdc, p_block_buf, max_block_len)) == FDCM_UNKNOWN) {
-		fprintf(stderr, "encrypt_fdat_file(): Could not determine FDAT bin crypto method!\n");
+		fprintf(stderr, "fdat_encrypt_file(): Could not determine FDAT bin crypto method!\n");
 		goto exit_err;
 	}
 	block_len = fdc_block_len(&fdc);	// doubled later, here for output only
@@ -432,42 +432,35 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 	free((void *)p_block_buf);
 	fdc_init(&fdc, 1, fdc_method);
 
-	//
 	// begin encrypt *.dec file with fdc_method determined before
-	//
 	sprintf(plog_global, "Reading FDAT dec input file: '%s' ...\n", fdat_in_fname); log_it(plog_global);
 
 	if (!(fh_in = fopen(fdat_in_fname, "rb"))) {
-		fprintf(stderr, "encrypt_fdat_file(): Error opening input file '%s'!\n", fdat_in_fname);
+		fprintf(stderr, "fdat_encrypt_file(): Error opening input file '%s'!\n", fdat_in_fname);
 		goto exit_err;
 	}
 
 	max_block_len = fdc_max_block_len(&fdc);
 	if (!(p_block_buf = malloc(max_block_len))) {
-		fprintf(stderr, "encrypt_fdat_file(): Failed to allocate block buffer!\n");
+		fprintf(stderr, "fdat_encrypt_file(): Failed to allocate block buffer!\n");
 		goto exit_err;
 	}
 
 	// get total input file size
-	fseek(fh_in, 0L, SEEK_END);
-	filesize = ftell(fh_in);
-	fseek(fh_in, 0L, SEEK_SET);
-
+	fseek(fh_in, 0L, SEEK_END); filesize = ftell(fh_in); fseek(fh_in, 0L, SEEK_SET);
 	if (max_block_len > filesize) max_block_len = filesize;
 
 	block_len = fdc_block_len(&fdc);	// 1.gen SHA1=1000, 2.gen AES=1024
 	block_len_decrypted = (block_len - sizeof(FDAT_ENC_BLOCK_HDR));	// 1.gen SHA1=996, 2.gen AES=1020
-	//sprintf(plog_global, "cipher method = %d, block length = %d\n", fdc_method, block_len); log_it(plog_global);
 
 	sprintf(plog_global, "Writing FDAT enc output to '%s' ... ", fdat_out_fname); log_it(plog_global);
 	if (!(fh_out = fopen(fdat_out_fname, "wb"))) {
-		fprintf(stderr, "encrypt_fdat_file(): Error creating output file '%s'!\n", fdat_out_fname);
+		fprintf(stderr, "fdat_encrypt_file(): Error creating output file '%s'!\n", fdat_out_fname);
 		goto exit_err;
 	}
 
 	// if the overall FDAT dec record length isn't an even multiple of block_len_decrypted,
 	// then the last block has to be padded with 0xff to form a full enc block. (kenan)
-	//
 	last_block = filesize % block_len_decrypted;
 	nblocks = (filesize / block_len_decrypted);
 	if (last_block) nblocks++;
@@ -475,18 +468,16 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 	for (block = 0; block < nblocks; block++) {
 		// header clear (UGLY!)
 		p_block_buf[0] = '\0';p_block_buf[1] = '\0';p_block_buf[2] = '\0';p_block_buf[3] = '\0';
-		// needed?
-		// p_blk_hdr = (FDAT_ENC_BLOCK_HDR *)p_block_buf;
 
 		if (block == nblocks-1) {
 			if ((this_len_decrypted = fread(p_block_buf+sizeof(FDAT_ENC_BLOCK_HDR), 1, block_len_decrypted, fh_in)) != last_block) {
-				fprintf(stderr, "encrypt_fdat_file(): Failed to read last input block #%d!\n", block);
+				fprintf(stderr, "fdat_encrypt_file(): Failed to read last input block #%d!\n", block);
 				goto exit_err;
 			}
 		}
 		else {
 			if ((this_len_decrypted = fread(p_block_buf+sizeof(FDAT_ENC_BLOCK_HDR), 1, block_len_decrypted, fh_in)) != block_len_decrypted) {
-				fprintf(stderr, "encrypt_fdat_file(): Failed to read input block #%d!\n", block);
+				fprintf(stderr, "fdat_encrypt_file(): Failed to read input block #%d!\n", block);
 				goto exit_err;
 			}
 		}
@@ -498,13 +489,9 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 		// calculate encrypted block length
 		this_len_encrypted = this_len_decrypted + sizeof(FDAT_ENC_BLOCK_HDR);
 
-//debug
-//sprintf(plog_global, "\nthis_len_enc %04x, block_len %04x\n",this_len_encrypted, block_len); log_it(plog_global);
-//debug
-
 		if (this_len_encrypted > block_len) {
 			fprintf(stderr,
-				"encrypt_fdat_image(blocknum=%u): Bad block write length (%u)!\n",
+				"fdat_encrypt_file(blocknum=%u): Bad block write length (%u)!\n",
 				block, this_len_decrypted);
 			goto exit_err;
 		}
@@ -523,24 +510,15 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 		p_block_buf[0] = (u8) calc_csum;
 		p_block_buf[1] = (u8) highb;
 
-//debug
-//if(block > nblocks-3) {for(int j=0;j<1024;j=j+32) {sprintf(plog_global, "\n%04x:", j);log_it(plog_global);for(int k=0;k<32;k++) {sprintf(plog_global, " %02x",p_block_buf[j+k]);log_it(plog_global);}}}
-//if(block > nblocks-3) {sprintf(plog_global, "\nblock: %04x, hdr_csum: %04x, len_and_flags: %04x\n", block, calc_csum, this_len_decrypted); log_it(plog_global);}
-//debug
-
 		// we encrypt blocks (with headers) in-place
 		if (fdc_cipher_blocks(&fdc, p_block_buf, p_block_buf, 1)) {
 			fprintf(stderr, "fdc_cipher_blocks() returned error!\n");
 			goto exit_err;
 		}
 
-//debug
-//if(block > nblocks-3) {for(int j=0;j<1024;j=j+32) {sprintf(plog_global, "\n%04x:", j);log_it(plog_global);for(int k=0;k<32;k++) {sprintf(plog_global, " %02x",p_block_buf[j+k]);log_it(plog_global);}}}
-//debug
-
 		// write complete block_len, last block padded
 		if (fwrite(p_block_buf, 1, block_len, fh_out) != block_len) {
-			fprintf(stderr, "encrypt_fdat_file(): Failed to write output block #%d!\n", block);
+			fprintf(stderr, "fdat_encrypt_file(): Failed to write output block #%d!\n", block);
 			goto exit_err;
 		}
 	}

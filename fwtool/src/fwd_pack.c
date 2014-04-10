@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fwd_pack.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -78,11 +78,25 @@ do_repack(const char *dirname_in, const int fwt_level, const int fwt_majorver, c
 
 	//TODO more stuff
 
+	// recreate *_sum content inside unpacked tar stuct
+
+	// repack tar fw file from level4 FDAT_fw directory
+	//sprintf(fname_fdat_orig, "%s/%s", dirname_lv3, BASENAME_FDAT_FIRMWARE_TAR);		// var reused!
+//	sprintf(fname_fdat_enc, "%s/%s", dirname_lv3, BASENAME_FDAT_FIRMWARE_TAR_MOD);	// var reused!
+//	sprintf(fname_fdat_dec, "%s/%s", dirname_lv4, BASENAME_FDAT_TAR_MOD);		// var reused!
+//	printf("=== Retar '%s' files from '%s' ===\n===  to '%s' ===\n\n", BASENAME_FDAT_TAR_MOD, dirname_lv4, fname_fdat_enc);
+//	sprintf(plog_global, "=== Retar '%s' files from '%s' ===\n===  to '%s' ===\n\n", BASENAME_FDAT_TAR_MOD, dirname_lv4, fname_fdat_enc); log_it(plog_global);
+
+//	if (tarfile_create_all(fname_fdat_enc, fname_fdat_dec) != 0) {
+//		fprintf(stderr, "tarfile_create() returned error!\n");
+//		return 1;
+//	}
+
 	// repack FDAT.repack from level3 tar file and fs images
-	sprintf(fname_fdat_orig, "%s/%s", dirname_lv2, BASENAME_FDAT_DECRYPTED);    // var reused!
+	sprintf(fname_fdat_orig, "%s/%s", dirname_lv2, BASENAME_FDAT_DECRYPTED);	// var reused!
 	sprintf(fname_fdat_dec, "%s/%s", dirname_lv2, BASENAME_FDAT_REPACKED);
-	printf("=== Repack '%s' files from '%s' ===\n===  to '%s' ===\n\n", FSIMAGE_EXT_MOD, dirname_lv3, fname_fdat_dec);
-	sprintf(plog_global, "=== Repack '%s' files from '%s' ===\n===  to '%s' ===\n\n", FSIMAGE_EXT_MOD, dirname_lv3, fname_fdat_dec); log_it(plog_global);
+	printf("=== Repack '%s' and '%s' files from '%s' ===\n===  to '%s' ===\n\n", FSIMAGE_EXT_MOD, BASENAME_FDAT_TAR_MOD, dirname_lv3, fname_fdat_dec);
+	sprintf(plog_global, "=== Repack '%s' and '%s' files from '%s' ===\n===  to '%s' ===\n\n", FSIMAGE_EXT_MOD, BASENAME_FDAT_TAR_MOD, dirname_lv3, fname_fdat_dec); log_it(plog_global);
 
 	if (fdat_repack(fname_fdat_orig, fname_fdat_dec, dirname_lv3, fwt_majorver, fwt_minorver) != 0) {
 		fprintf(stderr, "fdat_repack() returned error!\n");
@@ -226,7 +240,7 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 	char	inzip_fbasedir_fwdat[MAXPATH] = "";
 	char	fname_fwdata_generic[MAXPATH] = "";
 	char	fname_updater_log[MAXPATH] = "";
-	FILE	*pulog;
+	FILE	*pulog=NULL;
 
 	char	dirname_lv2[MAXPATH] = "";
 	char	dirname_lv3[MAXPATH] = "";
@@ -240,12 +254,11 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 	char	fname_fdat_fw[MAXPATH] = "";
 	char	fname_fdat_fs[MAXPATH] = "";
 	char	dirname_fdat_fw_untar[MAXPATH] = "";
+	char	fname_tar_attr[MAXPATH] = "";
 	char	fname_lzpt_in_fname[MAXPATH] = "";
 	char	fname_lzpt_out_fname[MAXPATH] = "";
 
-	int	i;
-	int	fs_image_count = 0;
-	int show_extract_names = 1;
+	int	i=0, fs_image_count=0, show_extract_names=1;
 
 	// check to see if input file is a zip archive
 	// (Sony firmware update .exe self-extracting autorun archive)
@@ -396,13 +409,14 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 	mkdir(dirname_lv4);
 
 	// if the extracted firmware file is a .tar file (should be), then extract all of the files
-	// to a sub-dir (same basename as firmware image, with ".untar" added)
+	// to a sub-dir (same basename as firmware image without .tar extension)
 	if (is_tarfile(fname_fdat_fw)) {
+		sprintf(fname_tar_attr, "%s/%s", dirname_lv4, BASENAME_FDAT_TAR_ATTR);
 		sprintf(dirname_fdat_fw_untar, "%s/%s", dirname_lv4, BASENAME_FDAT_FIRMWARE_BASE);
 		printf("=== Extract FDAT firmware .tar to '%s' ===\n", dirname_fdat_fw_untar);
 		sprintf(plog_global, "\n=== Extract FDAT firmware .tar to '%s' ===\n", dirname_fdat_fw_untar); log_it(plog_global);
 
-		if (tarfile_extract_all(fname_fdat_fw, dirname_fdat_fw_untar, 1) != 0) {
+		if (tarfile_extract_all(fname_fdat_fw, dirname_fdat_fw_untar, fname_tar_attr) != 0) {
 				fprintf(stderr, "tarfile_extract_all() returned error!\n");
 				return 1;
 		}
@@ -472,11 +486,11 @@ int
 find_firmware_dat_in_zipfile(const char *fname_zip, char *p_fname_outbuf, int sz_fname_outbuf,
 	char *p_fbase_outbuf, int sz_fbase_outbuf, char *p_fdir_outbuf, int sz_fdir_outbuf, char *p_fbasedir_outbuf, int sz_fbasedir_outbuf)
 {
-	char	l_fname[256];
-	int	ret = 0;
-	zip_handle	zh;
-	char	*p_fwdata, *p_ext;
-	int	len, lenbase, lendir, lenbasedir;
+	int	ret=0;
+	char	l_fname[256]="";
+	zip_handle	zh=NULL;
+	char	*p_fwdata=NULL, *p_ext=NULL;
+	int	len=0, lenbase=0, lendir=0, lenbasedir=0;
 
 	p_fname_outbuf[0] = '\0';
 

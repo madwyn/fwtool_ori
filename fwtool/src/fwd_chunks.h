@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fwd_chunks.h" is part of fwtool (http://www.nex-hack.info)
 //
@@ -28,20 +28,7 @@
 #ifndef FWD_CHUNKS_H
 #define FWD_CHUNKS_H
 
-//#define	FWDATA_REPACK_IOBUF_SIZE		1048576
 #define	FWDATA_MAXHEADLEN	16384
-
-//#define FWD_HEADER_MAGIC	0x895546550d0a1a0a
-// firmware images should start with this magic header
-//extern const unsigned char	fwdata_header_magic[] = {
-//	0x89, 0x55, 0x46, 0x55, 0x0d, 0x0a, 0x1a, 0x0a, 
-//};
-
-//#define FWD_DEND_HEAD	0x0000000444454e44
-// firmware images end with this DEND chunk, add crc-32
-//extern const unsigned char	fwdata_dend_head[] = {
-//	0x00, 0x00, 0x00, 0x04, 0x44, 0x45, 0x4E, 0x44, 
-//};
 
 // chunks (records) in the firmware image start with this
 typedef struct tagFWD_CHUNK_HDR {
@@ -56,4 +43,3 @@ extern	int	fwdata_extract_chunk_to_file(const char *fname_fwdata_in, const char 
 extern	int	fwdata_repack_chunks(const char *fname_fwdata_in, const char *dirname_out);
 
 #endif // FWD_CHUNKS_H
-

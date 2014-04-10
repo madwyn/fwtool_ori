@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "endian.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -93,8 +93,6 @@ LE32toHost(u8 *ptr)
 }
 
 /*
-
-
 void
 HosttoBE16 (u16 val, u8 *ptr)
 {
@@ -115,7 +113,7 @@ void
 HosttoLE16(u16 val, u8 *ptr)
 {
 	ptr[0] = (val & 0x00ff);
-	ptr[1] = (val & 0xff00) >> 8;   
+	ptr[1] = (val & 0xff00) >> 8;
 }
 
 void

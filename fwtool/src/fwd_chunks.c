@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fwd_chunks.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -50,10 +50,10 @@ static const unsigned char	fwdata_dend_head[] = {
 static int
 copy_chunk_payload_to_file(FILE *fh_in, const char *chunk_id, u32 chunk_len, const char *fname_out)
 {
-	unsigned char	io_buf[_TMP_IO_BUFLEN]; // =4k defined in config.h
-	int	this_len;
-	FILE	*fh_chunk_out = NULL;
-	int	retval;
+	int	retval=0;
+	unsigned char	io_buf[_TMP_IO_BUFLEN]=""; // =4k defined in config.h
+	FILE	*fh_chunk_out=NULL;
+	int	this_len=0;
 
 	sprintf(plog_global,"Write chunk %s to '%s' ... ", chunk_id, fname_out); log_it(plog_global);
 
@@ -100,13 +100,13 @@ exit_common:
 static int
 _fwdata_do_unpack(const char *fname_fwdata_in, const char *single_chunk_id, const char *single_chunk_fname_out, const char *full_extract_dirname_out)
 {
-	FILE	*fh_in = NULL, *fh_chunk_toc_out = NULL;
-	unsigned char	hdr_magic_buf[sizeof(fwdata_header_magic)];
-	int	retval;
+	int	retval=0;
+	FILE	*fh_in=NULL, *fh_chunk_toc_out=NULL;
 	FWD_CHUNK_HDR	chunk_hdr;
-	char	fname_buf[_TMP_FNAME_BUFLEN];
-	u32	chunk_len;
-	char	chunk_id[sizeof(chunk_hdr.chunk_id)+1];
+	unsigned char	hdr_magic_buf[sizeof(fwdata_header_magic)]="";
+	char	fname_buf[_TMP_FNAME_BUFLEN]="";
+	char	chunk_id[sizeof(chunk_hdr.chunk_id)+1]="";
+	u32	chunk_len=0;
 
 	if (!(fh_in = fopen(fname_fwdata_in, "rb"))) {
 		fprintf(stderr, "Error opening input file '%s'!\n", fname_fwdata_in);
@@ -231,8 +231,8 @@ fwdata_extract_chunk_to_file(const char *fname_fwdata_in, const char *chunk_id, 
 static int
 read_chunk_file_to_buffer(unsigned char *pbuf, const char *fname_in, const char *chunk_id, u32 *p_chunk_len)
 {
-	int	retval;
-	FILE	*fc_in = NULL;
+	int	retval=0;
+	FILE	*fc_in=NULL;
 	size_t	filesize=0;
 	FWD_CHUNK_HDR	chunk_hdr;
 
@@ -281,25 +281,21 @@ exit_common:
 int
 fwdata_repack_chunks(const char *fname_fwdata_in, const char *dirname_out)
 {
-	char	fname_chunk[MAXPATH] = "";
-	char	fname_out[MAXPATH] = "";
-	char	fname_fdatrepack[MAXPATH] = "";
-	FILE	*fc_out = NULL, *fc_in = NULL;
-
-	int	retval;
+	int	retval=0;
+	char	fname_chunk[MAXPATH]="";
+	char	fname_out[MAXPATH]="";
+	char	fname_fdatrepack[MAXPATH]="";
+	FILE	*fc_out=NULL, *fc_in=NULL;
 	FWD_CHUNK_HDR	chunk_hdr;
 	u32	chunk_len=0;
 	u32	*p_chunk_len=&chunk_len;
-	char	chunk_id[sizeof(chunk_hdr.chunk_id)+1] = "";
-
-	unsigned char	*p_buf = NULL;
-	int	p_buf_offset=sizeof(fwdata_header_magic);
+	char	chunk_id[sizeof(chunk_hdr.chunk_id)+1]="";
+	unsigned char	*p_buf=NULL;
+	int	block_len=0, p_buf_offset=sizeof(fwdata_header_magic);
 	size_t	filesize=0;
-	int	block_len = 0;
 
 	uLong dend_crc = crc32(0L, Z_NULL, 0);	// init from zlib
 
-	//
 	sprintf(fname_fdatrepack, "%s/%s", dirname_out, BASENAME_FDAT_REENCRYPTED);
 
 	// size of repacked FDAT for buffer (UGLY, may use >200mb, should do recursive with smaller buffer)

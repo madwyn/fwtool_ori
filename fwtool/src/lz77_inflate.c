@@ -165,4 +165,3 @@ int lz77_inflate(unsigned char *src, int len, unsigned char *dst, int dst_len, u
 		*sd = s;
 	return (d-dst);
 }
-

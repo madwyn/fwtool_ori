@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "lzpt_io.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -55,8 +55,8 @@
 int
 lzpt_read_toc(FILE *fh_in, unsigned char **pp_toc, int *pnum_entries, int *pmax_dblksz)
 {
-	unsigned char	iobuf[512], *p_toc = NULL;
-	unsigned int	lztp_version, toc_offset, toc_size, toc_nentries;
+	unsigned char	iobuf[512]="", *p_toc=NULL;
+	unsigned int	lztp_version=0, toc_offset=0, toc_size=0, toc_nentries=0;
 
 	fseek(fh_in, LZPT_MAGIC_OFS, SEEK_SET);
 	if ((fread(iobuf, 1, LZPT_MAGIC_LEN, fh_in) != LZPT_MAGIC_LEN) ||
@@ -119,8 +119,8 @@ lzpt_read_toc(FILE *fh_in, unsigned char **pp_toc, int *pnum_entries, int *pmax_
 int
 lzpt_read_block(FILE *fh_in, int block_num, unsigned char *p_toc, size_t toc_entries, unsigned char **pp_block_data, size_t *psz_block)
 {
-	unsigned int	toc_offset, entry_offset, entry_size, nread;
-	unsigned char	*p_block;
+	unsigned int	toc_offset=0, entry_offset=0, entry_size=0, nread=0;
+	unsigned char	*p_block=NULL;
 
 	*pp_block_data = NULL;
 	*psz_block = 0;
@@ -160,9 +160,9 @@ lzpt_read_block(FILE *fh_in, int block_num, unsigned char *p_toc, size_t toc_ent
 int
 lzpt_decompress_block(unsigned char *p_block_in, size_t sz_block_in, int sz_mxdblk_in, unsigned char **pp_block_out, size_t *psz_block_out)
 {
-	unsigned char	*p_block = NULL, *p_in, *p_out, *next_in;
-	int	remain_in, remain_out, this_declen;
-	size_t	total_decomp_size;
+	unsigned char	*p_block=NULL, *p_in=NULL, *p_out=NULL, *next_in=NULL;
+	int	remain_in=0, remain_out=0, this_declen=0;
+	size_t	total_decomp_size=0;
 
 	*pp_block_out = NULL;
 	*psz_block_out = 0;
@@ -218,8 +218,8 @@ lzpt_free_toc(unsigned char *p_toc, size_t toc_nentries)
 int
 is_lzpt_file(const char *fname)
 {
-	FILE	*fh = NULL;
-	int	ret;
+	FILE	*fh=NULL;
+	int	ret=0;
 
 	if (!(fh = fopen(fname, "rb"))) {
 		return 0;
@@ -234,21 +234,17 @@ is_lzpt_file(const char *fname)
 int
 lzpt_decompress_file(const char *fname_in, const char *fname_out)
 {
-	FILE	*fh_in = NULL, *fh_out = NULL;
-	unsigned char	*p_toc = NULL, *p_enc_block = NULL, *p_dec_block = NULL;
-	size_t	sz_enc_block, sz_dec_block;
-	// size_t  filesize;
-	int	toc_nentries, i, sz_max_dec_block, retval;
+	int	retval=0;
+	FILE	*fh_in=NULL, *fh_out=NULL;
+	unsigned char	*p_toc=NULL, *p_enc_block=NULL, *p_dec_block=NULL;
+	size_t	sz_enc_block=0, sz_dec_block=0;
+	int	i=0, toc_nentries=0, sz_max_dec_block=0;
 
 
 	if (!(fh_in = fopen(fname_in, "rb"))) {
 		fprintf(stderr, "Error opening input file '%s'!\n", fname_in);
 		goto exit_err;
 	}
-	// fseek(fh_in, 0L, SEEK_END);
-	// filesize = ftell(fh_in);
-	// fseek(fh_in, 0L, SEEK_SET);
-
 
 	if (lzpt_read_toc(fh_in, &p_toc, &toc_nentries, &sz_max_dec_block)) {
 		fprintf(stderr, "Error reading TOC!\n");

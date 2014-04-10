@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fdat_cipher_sha1.h" is part of fwtool (http://www.nex-hack.info)
 //
@@ -49,4 +49,3 @@ extern	int	fdc_sha1_cipher_bytes(FDC_SHA1 *p_ctx, unsigned char *p_outbuf, unsig
 extern	int	fdc_sha1_cipher_blocks(FDC_SHA1 *p_ctx, unsigned char *p_outbuf, unsigned char *p_inbuf, int nblocks);
 
 #endif // FDAT_CIPHER_SHA1_H
-

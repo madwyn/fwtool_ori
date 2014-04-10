@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fdat_cipher_aes.h" is part of fwtool (http://www.nex-hack.info)
 //
@@ -48,4 +48,3 @@ extern	int	fdc_aes_cipher_bytes(FDC_AES *p_ctx, unsigned char *p_outbuf, unsigne
 extern	int	fdc_aes_cipher_blocks(FDC_AES *p_ctx, unsigned char *p_outbuf, unsigned char *p_inbuf, int nblocks);
 
 #endif // FDAT_CIPHER_AES_H
-

@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fwt_names.h" is part of fwtool (http://www.nex-hack.info)
 //
@@ -29,7 +29,7 @@
 #define FWT_NAMES_H
 
 // version string and global logfile
-#define VERSION	"v0.6final (2013-08-07)"
+#define VERSION	"v0.7b5 (2014-04-09)"
 #define LOGFILE "fwtool_log.txt"
 
 // logfile name for Sony FirmwareUpdater
@@ -87,13 +87,17 @@
 #define	BASENAME_FDAT_FS_PREFIX	"FDAT_fs"
 #define FSIMAGE_EXT_MOD	".mod" FSIMAGE_EXT
 
-#define FWT_NOMODELVERSION	-1
+#define FWT_NOMODELVERSION	(-1)
 #define	FWT_MAXMAJORVER	127
 #define	FWT_MAXMINORVER	127
 
 // level4 dirnames
 #define	LEVEL4_SUBDIR	"level4"
 // level4 tar and cramfs
+#define	BASENAME_FDAT_TAR_MOD	BASENAME_FDAT_FIRMWARE_BASE "_mod"
+#define	BASENAME_FDAT_TAR_ATTR	"FDAT_fw_attrib.txt"
+#define	ENTRY_ATTR_FNAME	".attr_unpack.txt"
+
 
 // level5 dirnames
 #define	LEVEL5_SUBDIR	"level5"

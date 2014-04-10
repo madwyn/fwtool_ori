@@ -4,7 +4,7 @@
 // written (reverse-engineered) by Paul Bartholomew, released under the GPL
 // (originally based on "pr.exe" from nex-hack.info, with much more since then)
 //
-// Copyright (C) 2012-2013, nex-hack project
+// Copyright (C) 2012-2014, nex-hack project
 //
 // This file "fwt_util.c" is part of fwtool (http://www.nex-hack.info)
 //
@@ -42,48 +42,68 @@ MODEL_TYPE	model_type[NUM_MODEL_TYPE] = {
 	{0x10300203, "SLT-A55"},
 	{0x21030006, "SLT-A57"},
 	{0xffffffff, "SLT-A58"},
-	{0x12030012, "SLT-A65"},
+	{0x12030012, "SLT-A65"},	//10.
 	{0x12030011, "SLT-A77"},
 	{0x22030010, "SLT-A99"},
+	{0xffffffff, "Hasselblad HV"},
 	{0x10300206, "NEX-3"},
 	{0x11300223, "NEX-C3"},
 	{0x21030010, "NEX-F3"},
 	{0xffffffff, "NEX-3N"},
 	{0x10300205, "NEX-5"},
 	{0x12030023, "NEX-5N"},
-	{0x22030014, "NEX-5R"},
-	{0xffffffff, "NEX-5T"},
+	{0x22030014, "NEX-5R"},		//20.
+	{0x22030020, "NEX-5T"},
 	{0x22030018, "NEX-6"},
 	{0x12030024, "NEX-7"},
+	{0x12030024, "Hasselblad Lunar"},
 	{0x10300211, "NEX-VG10"},
 	{0xffffffff, "NEX-VG20"},
 	{0xffffffff, "NEX-VG30"},
 	{0xffffffff, "NEX-VG900"},
 	{0x22010015, "NEX-EA50"},
-	{0x11010009, "NEX-FS100"},
+	{0x11010009, "NEX-FS100"},	//30.
 	{0x21010061, "NEX-FS700"},
+	{0xffffffff, "ILCE-3000"},
+	{0xffffffff, "ILCE-5000"},
+	{0xffffffff, "ILCE-6000"},
+	{0x41030013, "ILCE-7"},
+	{0x41030034, "ILCE-7R"},
 	{0xffffffff, "SEL-16F28"},
 	{0xffffffff, "SEL-20F28"},
 	{0x11A08015, "SEL-24F18Z"},
-	{0x11A08014, "SEL-30M35"},
+	{0x11A08014, "SEL-30M35"},	//40.
 	{0x11A08016, "SEL-50F18"},
+	{0xffffffff, "SEL-1018"},
 	{0xffffffff, "SEL-P1650"},
+	{0xffffffff, "SEL-1670Z"},
 	{0x10A08011, "SEL-1855"},
+	{0x10A08011, "SEL-P18105G"},
 	{0x10A08013, "SEL-18200"},
 	{0xffffffff, "SEL-18200LE"},
 	{0xffffffff, "SEL-P18200"},
-	{0x10A08013, "SEL-55210"},
+	{0x10A08013, "SEL-55210"},	//50.
+	{0xffffffff, "SEL-F35F28Z"},
+	{0xffffffff, "SEL-F55F18Z"},
+	{0xffffffff, "SEL-F2470Z"},
+	{0xffffffff, "SEL-F2870"},
+	{0xffffffff, "SEL-F70200G"},
 	{0x10A00001, "LA-EA1"},
 	{0xffffffff, "LA-EA2"},
 	{0xffffffff, "LA-EA3"},
+	{0xffffffff, "LA-EA4"},
+	{0xffffffff, "DSC-RX1"},	//60.
+	{0xffffffff, "DSC-RX1R"},
+	{0xffffffff, "DSC-RX10"},
 	{0xffffffff, "DSC-RX100"},
+	{0xffffffff, "Hasselblad Stellar"},
 	{0xffffffff, "DSC-RX100M2"},
-	{0xffffffff, "DSC-RX1"},
-	{0xffffffff, "DSC-RX1R"}
+	{0x32020080, "DSC-QX10"},
+	{0x32020070, "DSC-QX100"}	//67
 };
 // model table end
 
-const char fwt_copyright[] ="fwtool " VERSION " Copyright 2012-2013 http://www.nex-hack.info";
+const char fwt_copyright[] ="fwtool " VERSION " Copyright 2012-2014 http://www.nex-hack.info";
 
 
 void
@@ -104,6 +124,7 @@ do_usage(const char *tool_name)
 			"    -x  eXtract firmware (default mode)\n" \
 			"    -c  Create firmware (only rebuild FDAT, reencrypt&rebuild fwdata to date)\n" \
 			"    -m  Modify firmware (not implemented yet)\n" \
+			"    -u  ux file browser\n" \
 			"    -h  show extended Help\n" \
 			"    -t  show Todo list\n" \
 			"  options :\n" \
@@ -130,17 +151,23 @@ do_help(const char *tool_name)
 			"        Extract complete content, used as input to modify and create mode.\n" \
 
 			"    -c  Create firmware (only rebuild FDAT, reencrypt&rebuild fwdata to date):\n" \
-			"        Argument: <UpdaterDirectory> created with eXtract mode, this may contain\n" \
-			"        a relative or full path.\n" \
-			"        <UpdaterDirectory>/nexhack/level3/*.mod.* must exist, this files will be\n" \
-			"        repacked, reencrypted and repacked to a valid FirmwareUpdate*.dat,\n" \
-			"        further versions of fwtool will repack lower levels not implemented yet.\n" \
+			"        Argument: <UpdaterDirectory> created with eXtract mode, this may\n" \
+			"        contain a relative or full path.\n" \
+			"        <UpdaterDirectory>/nexhack/level3/*.mod.* must exist, this files will\n" \
+			"        be repacked, reencrypted and repacked to a valid FirmwareUpdate*.dat.\n" \
+			"        Further versions of fwtool will repack lower levels not implemented\n" \
+			"        yet.\n" \
 			"        Run <UpdaterDirectory>/FirmwareUpdater.exe to update cam with modified\n" \
 			"        firmware <UpdaterDirectory>/Resource/FirmwareData_NexHack.dat.\n" \
 			"        Original firmware is saved to\n" \
  			"        <UpdaterDirectory>/Resource/FirmwareData_Original.dat.save.\n" \
 
 			"    -m  Modify firmware (not implemented yet)\n" \
+			"    -u  Ux file browser (2. gen devices only)\n" \
+			"        Argument: <ux File>\n" \
+			"        creates commented hexdump of ux menu files found in nflasha8/share/app\n" \
+			"        master ux file is 'global.xdb' (type 'uxa'), levels 'uxb', 'uxc' and\n" \
+			"        'uxd' are found in 2. gen firmware.\n" \
 			"    -h  show extended Help (this list)\n" \
 			"    -t  show Todo list\n" \
 
@@ -181,7 +208,7 @@ do_todolist(const char *tool_name)
 char *
 convert_path_slashes(char *buf)
 {
-	char	*p;
+	char	*p=NULL;
 	if (buf) {
 		while((p = strrchr(buf, '\\'))) {
 			*p = '/';
@@ -194,7 +221,7 @@ convert_path_slashes(char *buf)
 void
 log_it(char *pinfo)
 {
-    FILE *plog;
+    FILE *plog=NULL;
 
     if((plog = fopen(LOGFILE,"a")))
     {
