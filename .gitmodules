@@ -1,0 +1,6 @@
+[submodule "deps/zlib"]
+	path = deps/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "deps/libarchive"]
+	path = deps/libarchive
+	url = https://github.com/libarchive/libarchive.git
