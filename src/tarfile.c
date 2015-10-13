@@ -154,9 +154,16 @@ _tarfile_extract_create_dir(char *path)
 		if (r != 0)
 			return r;
 	}
-	if (mkdir(path) == 0) {
+
+#if defined(_WIN32)
+	if (0 == _mkdir(path)) {
 		return 0;
 	}
+#else
+	if (0 == mkdir(path, 0022)) {
+		return 0;
+	}
+#endif
 
 	/*
 	 * Without the following check, a/b/../b/c/d fails at the
@@ -356,7 +363,14 @@ tarfile_extract_all(const char *fname_tar, const char *dirname_out, const char *
 	}
 	else fclose(fh_attr);
 
-	mkdir(dirname_out);
+//	mkdir(dirname_out);
+
+#if defined(_WIN32)
+	_mkdir(dirname_out);
+#else
+	mkdir(dirname_out, 0022);
+#endif
+
 	while(1) {
 		ret = archive_read_next_header(th->a, &entry);
 		if (ret == ARCHIVE_EOF) {
