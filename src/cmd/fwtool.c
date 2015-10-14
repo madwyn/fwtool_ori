@@ -49,11 +49,12 @@
 
 // fwtool contains only main for console ui and init for global logfile
 
-#include "config.h"		// compiler and os dependant config
-#include "fwt_names.h"	// version string and hardcoded names are set there
-#include "fwt_util.h"
-#include "fwt_uxbrowse.h"
-#include "fwd_pack.h"
+#include <stdlib.h>
+#include "../lib/config.h"		// compiler and os dependant config
+#include "../lib/fwt_util.h"
+#include "../lib/fwt_names.h"	// version string and hardcoded names are set there
+#include "../lib/fwd_pack.h"
+#include "../lib/fwt_uxbrowse.h"
 
 
 // init globals for logfile
