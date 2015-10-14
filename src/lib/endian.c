@@ -26,7 +26,7 @@
 //
 
 #include "config.h"
-#include "_endian.h"
+#include "endian.h"
 
 // read a big-endian 16-bit value from buffer
 uint16_t
