@@ -25,12 +25,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
-#ifndef ENDIAN_H
-#define ENDIAN_H
-
-//#ifndef CONFIG_H
-//	#include "config.h"
-//#endif
+#ifndef __ENDIAN_H__
+#define __ENDIAN_H__
 
 #include <stdint.h>
 
@@ -45,4 +41,4 @@ void BE32toHost(uint8_t *ptr);
 void LE16toHost(uint8_t *ptr);
 void LE32toHost(uint8_t *ptr);
 
-#endif // ENDIAN_H
+#endif // __ENDIAN_INCLUDED_H

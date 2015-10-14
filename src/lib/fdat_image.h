@@ -64,7 +64,7 @@ typedef struct tagFDAT_IMAGE_HEADER {
 	unsigned char	fih_version_major;							// 0021 - major version: FF is sign-extended on read
 	unsigned char	fih_version_unknown_pad[2];					// 0022
 	unsigned int	fih_model;									// 0024 - body or lens model (see table in fwt_util.c)
-	unsigned int	fih_unknown_03;								// 0028 - unknown u32
+	unsigned int	fih_unknown_03;								// 0028 - unknown uint32_t
 	unsigned int	fih_unknown_04;								// 002c
 	unsigned int	fih_fw_offset;								// 0030 - offset to firmware image (.tar)
 	unsigned int	fih_fw_length;								// 0034 - length of firmware image (.tar)

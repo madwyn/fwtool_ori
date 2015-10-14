@@ -27,6 +27,7 @@
 
 // fwt_util contains global logfile, slash conversion, console output
 
+#include <stdlib.h>
 #include "config.h"
 #include "fwt_names.h"
 #include "fwt_uxbrowse.h"

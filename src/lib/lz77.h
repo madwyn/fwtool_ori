@@ -122,7 +122,7 @@ struct lz77_union {
 #define HASH_VALUE(d1,d2,d3) (((d1)<<(HASH_BITS-8))^((d2)<<(HASH_BITS-10))^(d3))
 
 #define WORKSPACE_HASH(buf) (buf)
-#define WORKSPACE_INDEX(buf) ((void *)((u8 *)(buf)+HASH_SIZE))
+#define WORKSPACE_INDEX(buf) ((void *)((uint8_t *)(buf)+HASH_SIZE))
 
 #define LZ77_WORKSPACE_SIZE(winlen) (HASH_SIZE+sizeof(short)*(winlen))
 

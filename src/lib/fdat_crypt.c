@@ -28,7 +28,7 @@
 #include "config.h"
 #include "fwt_util.h"
 
-#include "endian.h"
+#include "_endian.h"
 #include "csum.h"
 #include "fdat_cipher.h"
 
@@ -162,9 +162,9 @@ fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted, u
 		p_blk_hdr = (FDAT_ENC_BLOCK_HDR *)p_crypt_io;
 
 		// ((block_hdr[3] << 8) | block_hdr[2]) is the # of bytes to write high bit of block_hdr[3] indicates last block?
-		block_hdr_csum = readLE16((u8 *)&p_blk_hdr->hdr_csum);
+		block_hdr_csum = readLE16((uint8_t *)&p_blk_hdr->hdr_csum);
 
-		block_hdr_len_and_flags = readLE16((u8 *)&p_blk_hdr->hdr_len_and_flags);
+		block_hdr_len_and_flags = readLE16((uint8_t *)&p_blk_hdr->hdr_len_and_flags);
 		last_block = ((block_hdr_len_and_flags & 0x8000) != 0);
 
 		this_len_decrypted = (block_hdr_len_and_flags & 0xfff);
@@ -179,7 +179,7 @@ fdat_decrypt_buffer(unsigned char *p_fdat_encrypted, size_t sz_fdat_encrypted, u
 //debug
 		// calculate checksum, over everything but the first word of the block header
 		// (which is the checksum). confirm it matches the value stored in the header
-		calc_csum = calc_csum_16bitLE_words((u16 *)(&p_crypt_io[2]), ((block_len-2)>>1));
+		calc_csum = calc_csum_16bitLE_words((uint16_t *)(&p_crypt_io[2]), ((block_len-2)>>1));
 
 		if (calc_csum != block_hdr_csum) {
 			fprintf(stderr,
@@ -309,9 +309,9 @@ fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_MET
 
 		// ((block_hdr[3] << 8) | block_hdr[2]) is the # of bytes to write
 		// high bit of block_hdr[3] indicates last block?
-		block_hdr_csum = readLE16((u8 *)&p_blk_hdr->hdr_csum);
+		block_hdr_csum = readLE16((uint8_t *)&p_blk_hdr->hdr_csum);
 
-		block_hdr_len_and_flags = readLE16((u8 *)&p_blk_hdr->hdr_len_and_flags);
+		block_hdr_len_and_flags = readLE16((uint8_t *)&p_blk_hdr->hdr_len_and_flags);
 
 		this_len_decrypted = (block_hdr_len_and_flags & 0x0fff);
 		if (is3gen == 0 && this_len_decrypted > block_len_decrypted) {
@@ -324,7 +324,7 @@ fdat_decrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, FDC_MET
 		}
 		// calculate checksum, over everything but the first word of the block header
 		// (which is the checksum).  confirm it matches the value stored in the header
-		calc_csum = calc_csum_16bitLE_words((u16 *)(&p_block_buf[2]), ((block_len-2)>>1));
+		calc_csum = calc_csum_16bitLE_words((uint16_t *)(&p_block_buf[2]), ((block_len-2)>>1));
 
 		if (calc_csum != block_hdr_csum) {
 				if (*(int*)&p_block_buf[FDAT_IMAGE_HEADER_LEN] != 0) {
@@ -397,7 +397,7 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 	int nblocks=0, block=0, last_block=0, pad=0;
 	unsigned char	*p_block_buf=NULL;
 	unsigned short	calc_csum=0;
-	u16 highb=0;
+	uint16_t highb=0;
 
 	if (p_fdc_method) *p_fdc_method = FDCM_UNKNOWN;
 
@@ -501,14 +501,14 @@ fdat_encrypt_file(const char *fdat_in_fname, const char *fdat_out_fname, const c
 			highb = (highb | 0x80);	// last block has high bit set as flag
 			for (pad=last_block+sizeof(FDAT_ENC_BLOCK_HDR);pad<block_len;pad++) p_block_buf[pad] = 0xff;	// pad last block to block len
 		}
-		p_block_buf[2] = (u8) this_len_decrypted;
-		p_block_buf[3] = (u8) highb;
+		p_block_buf[2] = (uint8_t) this_len_decrypted;
+		p_block_buf[3] = (uint8_t) highb;
 		// calculate checksum, over everything but the first word of the
 		// block header (which is the checksum).  write into buffer.
-		calc_csum = calc_csum_16bitLE_words((u16 *)(&p_block_buf[2]), ((block_len-2)>>1));
+		calc_csum = calc_csum_16bitLE_words((uint16_t *)(&p_block_buf[2]), ((block_len-2)>>1));
 		highb = calc_csum >> 8;
-		p_block_buf[0] = (u8) calc_csum;
-		p_block_buf[1] = (u8) highb;
+		p_block_buf[0] = (uint8_t) calc_csum;
+		p_block_buf[1] = (uint8_t) highb;
 
 		// we encrypt blocks (with headers) in-place
 		if (fdc_cipher_blocks(&fdc, p_block_buf, p_block_buf, 1)) {

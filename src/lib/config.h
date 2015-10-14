@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 
 
 #if	defined(__POCC__)	// POCC lib use '_function' for POSIX 'function'
@@ -72,10 +72,6 @@
 
 #define	_TMP_IO_BUFLEN		4096
 #define	_TMP_FNAME_BUFLEN	512
-
-typedef	unsigned int	u32;
-typedef	unsigned short	u16;
-typedef	unsigned char	u8;
 
 #define	MAXPATH		256
 

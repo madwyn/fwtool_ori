@@ -32,7 +32,7 @@
 #include "fwt_util.h"
 #include "fwd_chunks.h"
 
-#include "endian.h"
+#include "_endian.h"
 
 #include "zlib.h"	// for crc-32
 
@@ -48,7 +48,7 @@ static const unsigned char	fwdata_dend_head[] = {
 
 
 static int
-copy_chunk_payload_to_file(FILE *fh_in, const char *chunk_id, u32 chunk_len, const char *fname_out)
+copy_chunk_payload_to_file(FILE *fh_in, const char *chunk_id, uint32_t chunk_len, const char *fname_out)
 {
 	int	retval=0;
 	unsigned char	io_buf[_TMP_IO_BUFLEN]=""; // =4k defined in config.h
@@ -106,7 +106,7 @@ _fwdata_do_unpack(const char *fname_fwdata_in, const char *single_chunk_id, cons
 	unsigned char	hdr_magic_buf[sizeof(fwdata_header_magic)]="";
 	char	fname_buf[_TMP_FNAME_BUFLEN]="";
 	char	chunk_id[sizeof(chunk_hdr.chunk_id)+1]="";
-	u32	chunk_len=0;
+	uint32_t	chunk_len=0;
 
 	if (!(fh_in = fopen(fname_fwdata_in, "rb"))) {
 		fprintf(stderr, "Error opening input file '%s'!\n", fname_fwdata_in);
@@ -137,7 +137,7 @@ _fwdata_do_unpack(const char *fname_fwdata_in, const char *single_chunk_id, cons
 
 	//
 	// the structure of the file (after the 8-byte 'magic' value
-	// {0x89,0x55,0x46,0x55,0x0d,0x0a,0x1a,0x0a,} = "‰UFU<cr><lf><sub><lf>")
+	// {0x89,0x55,0x46,0x55,0x0d,0x0a,0x1a,0x0a,} = "ï¿½UFU<cr><lf><sub><lf>")
 	// is a series of 'records'.  a record consist of:
 	//
 	//	- a 32-bit 'record length' value (stored BIG-endian ! )
@@ -229,7 +229,7 @@ fwdata_extract_chunk_to_file(const char *fname_fwdata_in, const char *chunk_id, 
 
 // added by kenan
 static int
-read_chunk_file_to_buffer(unsigned char *pbuf, const char *fname_in, const char *chunk_id, u32 *p_chunk_len)
+read_chunk_file_to_buffer(unsigned char *pbuf, const char *fname_in, const char *chunk_id, uint32_t *p_chunk_len)
 {
 	int	retval=0;
 	FILE	*fc_in=NULL;
@@ -255,10 +255,10 @@ read_chunk_file_to_buffer(unsigned char *pbuf, const char *fname_in, const char 
 
 	memcpy(pbuf+sizeof(chunk_hdr.chunk_len_BE_bytes),chunk_id,sizeof(chunk_hdr.chunk_id));
 	// store payload length BE (UGLY!)
-	pbuf[3] = (u8) ((filesize & 0xff));
-	pbuf[2] = (u8) ((filesize & 0xff00) >> 8);
-	pbuf[1] = (u8) ((filesize & 0xff0000) >> 16);
-	pbuf[0] = (u8) ((filesize & 0xff000000) >> 24);
+	pbuf[3] = (uint8_t) ((filesize & 0xff));
+	pbuf[2] = (uint8_t) ((filesize & 0xff00) >> 8);
+	pbuf[1] = (uint8_t) ((filesize & 0xff0000) >> 16);
+	pbuf[0] = (uint8_t) ((filesize & 0xff000000) >> 24);
 
 	sprintf(plog_global,"read chunk file '%s', id '%s', len %02d\n", fname_in, chunk_id, *p_chunk_len); log_it(plog_global);
 
@@ -287,8 +287,8 @@ fwdata_repack_chunks(const char *fname_fwdata_in, const char *dirname_out)
 	char	fname_fdatrepack[MAXPATH]="";
 	FILE	*fc_out=NULL, *fc_in=NULL;
 	FWD_CHUNK_HDR	chunk_hdr;
-	u32	chunk_len=0;
-	u32	*p_chunk_len=&chunk_len;
+	uint32_t	chunk_len=0;
+	uint32_t	*p_chunk_len=&chunk_len;
 	char	chunk_id[sizeof(chunk_hdr.chunk_id)+1]="";
 	unsigned char	*p_buf=NULL;
 	int	block_len=0, p_buf_offset=sizeof(fwdata_header_magic);
@@ -346,12 +346,12 @@ fwdata_repack_chunks(const char *fname_fwdata_in, const char *dirname_out)
 
 	// do crc-32
 	dend_crc = crc32(dend_crc, p_buf, p_buf_offset);
-	// memcpy(p_buf+p_buf_offset+sizeof(chunk_hdr),&dend_crc,sizeof(u32)); // wrong endian
+	// memcpy(p_buf+p_buf_offset+sizeof(chunk_hdr),&dend_crc,sizeof(uint32_t)); // wrong endian
 	// store payload crc32 BE (UGLY!)
-	p_buf[p_buf_offset+sizeof(chunk_hdr)+3] = (u8) ((dend_crc & 0xff));
-	p_buf[p_buf_offset+sizeof(chunk_hdr)+2] = (u8) ((dend_crc & 0xff00) >> 8);
-	p_buf[p_buf_offset+sizeof(chunk_hdr)+1] = (u8) ((dend_crc & 0xff0000) >> 16);
-	p_buf[p_buf_offset+sizeof(chunk_hdr)+0] = (u8) ((dend_crc & 0xff000000) >> 24);
+	p_buf[p_buf_offset+sizeof(chunk_hdr)+3] = (uint8_t) ((dend_crc & 0xff));
+	p_buf[p_buf_offset+sizeof(chunk_hdr)+2] = (uint8_t) ((dend_crc & 0xff00) >> 8);
+	p_buf[p_buf_offset+sizeof(chunk_hdr)+1] = (uint8_t) ((dend_crc & 0xff0000) >> 16);
+	p_buf[p_buf_offset+sizeof(chunk_hdr)+0] = (uint8_t) ((dend_crc & 0xff000000) >> 24);
 	// create DEND chunk header
 	memcpy(p_buf+p_buf_offset,fwdata_dend_head,sizeof(chunk_hdr));
 	p_buf_offset=p_buf_offset+sizeof(chunk_hdr)+fwdata_dend_head[3];

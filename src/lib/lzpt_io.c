@@ -32,7 +32,7 @@
 #include "fwt_names.h"
 #include "fwt_util.h"
 
-#include "endian.h"
+#include "_endian.h"
 #include "lz77.h"
 
 #include "lzpt_io.h"
