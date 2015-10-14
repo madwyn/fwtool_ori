@@ -29,7 +29,7 @@
 #include "fwt_names.h"
 #include "fwt_util.h"
 
-#include "_endian.h"
+#include "endian.h"
 #include "csum.h"
 #include "fdat_cipher.h"
 

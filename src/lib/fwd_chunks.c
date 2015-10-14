@@ -32,7 +32,7 @@
 #include "fwt_util.h"
 #include "fwd_chunks.h"
 
-#include "_endian.h"
+#include "endian.h"
 
 #include "zlib.h"	// for crc-32
 
