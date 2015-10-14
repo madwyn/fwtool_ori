@@ -28,19 +28,21 @@
 #ifndef ENDIAN_H
 #define ENDIAN_H
 
-#ifndef CONFIG_H
-	#include "config.h"
-#endif
+//#ifndef CONFIG_H
+//	#include "config.h"
+//#endif
+
+#include <stdint.h>
 
 // big-/little-endian helpers
-extern	u16	readBE16(u8 *ptr);
-extern	u32	readBE32(u8 *ptr);
-extern	u16	readLE16(u8 *ptr);
-extern	u32	readLE32(u8 *ptr);
+uint16_t readBE16(uint8_t *ptr);
+uint32_t readBE32(uint8_t *ptr);
+uint16_t readLE16(uint8_t *ptr);
+uint32_t readLE32(uint8_t *ptr);
 
-extern	void	BE16toHost(u8 *ptr);
-extern	void	BE32toHost(u8 *ptr);
-extern	void	LE16toHost(u8 *ptr);
-extern	void	LE32toHost(u8 *ptr);
+void BE16toHost(uint8_t *ptr);
+void BE32toHost(uint8_t *ptr);
+void LE16toHost(uint8_t *ptr);
+void LE32toHost(uint8_t *ptr);
 
 #endif // ENDIAN_H

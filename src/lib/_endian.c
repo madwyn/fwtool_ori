@@ -26,82 +26,82 @@
 //
 
 #include "config.h"
-#include "endian.h"
+#include "_endian.h"
 
 // read a big-endian 16-bit value from buffer
-u16
-readBE16(u8 *ptr)
+uint16_t
+readBE16(uint8_t *ptr)
 {
-	return (((u16)(ptr[0]) << 8) | ptr[1]);
+	return (((uint16_t)(ptr[0]) << 8) | ptr[1]);
 }
 
 // read a big-endian 32-bit value from buffer
-u32
-readBE32(u8 *ptr)
+uint32_t
+readBE32(uint8_t *ptr)
 {
-	return (((u32)readBE16(&ptr[0]) << 16) | readBE16(&ptr[2]));
+	return (((uint32_t)readBE16(&ptr[0]) << 16) | readBE16(&ptr[2]));
 }
 
 // read a little-endian 16-bit value from buffer
-u16
-readLE16(u8 *ptr)
+uint16_t
+readLE16(uint8_t *ptr)
 {
-	return (((u16)(ptr[1]) << 8) | ptr[0]);
+	return (((uint16_t)(ptr[1]) << 8) | ptr[0]);
 }
 
 // read a little-endian 32-bit value from buffer
-u32
-readLE32(u8 *ptr)
+uint32_t
+readLE32(uint8_t *ptr)
 {
-	return (((u32)readLE16(&ptr[2]) << 16) | readLE16(&ptr[0]));
+	return (((uint32_t)readLE16(&ptr[2]) << 16) | readLE16(&ptr[0]));
 }
 
 void
-BE16toHost(u8 *ptr)
+BE16toHost(uint8_t *ptr)
 {
-	u16	val;
+	uint16_t	val;
 
 	val = readBE16(ptr);
-	*(u16 *)ptr = val;
+	*(uint16_t *)ptr = val;
 }
 
 void
-BE32toHost(u8 *ptr)
+BE32toHost(uint8_t *ptr)
 {
-	u32	val;
+	uint32_t	val;
 
 	val = readBE32(ptr);
-	*(u32 *)ptr = val;
+	*(uint32_t *)ptr = val;
 }
 
 void
-LE16toHost(u8 *ptr)
+LE16toHost(uint8_t *ptr)
 {
-	u16	val;
+	uint16_t	val;
 
 	val = readLE16(ptr);
-	*(u16 *)ptr = val;
+	*(uint16_t *)ptr = val;
 }
 
 void
-LE32toHost(u8 *ptr)
+LE32toHost(uint8_t *ptr)
 {
-	u32	val;
+	uint32_t	val;
 
 	val = readLE32(ptr);
-	*(u32 *)ptr = val;
+	*(uint32_t *)ptr = val;
 }
 
 /*
 void
-HosttoBE16 (u16 val, u8 *ptr)
+HosttoBE16 (uint16_t val, uint8_t *ptr)
 {
 	ptr[1] = (val & 0x00ff);
 	ptr[0] = (val & 0xff00) >> 8;
 }
 
 void
-HosttoBE32 (u32 val, u8 *ptr)
+HosttoBE32 (uint32_t val, uint8_t *ptr)
 {
 	ptr[3] = (val & 0xff);
 	ptr[2] = (val & 0xff00) >> 8;
@@ -110,18 +110,18 @@ HosttoBE32 (u32 val, u8 *ptr)
 }
 
 void
-HosttoLE16(u16 val, u8 *ptr)
+HosttoLE16(uint16_t val, uint8_t *ptr)
 {
 	ptr[0] = (val & 0x00ff);
 	ptr[1] = (val & 0xff00) >> 8;
 }
 
 void
-HosttoLE32(u32 val, u8 *ptr)
+HosttoLE32(uint32_t val, uint8_t *ptr)
 {
-	ptr[0] = (u8)((val & 0x000000ffL));
-	ptr[1] = (u8)((val & 0x0000ff00L) >> 8);
-	ptr[2] = (u8)((val & 0x00ff0000L) >> 16);
-	ptr[3] = (u8)((val & 0xff000000L) >> 24);
+	ptr[0] = (uint8_t)((val & 0x000000ffL));
+	ptr[1] = (uint8_t)((val & 0x0000ff00L) >> 8);
+	ptr[2] = (uint8_t)((val & 0x00ff0000L) >> 16);
+	ptr[3] = (uint8_t)((val & 0xff000000L) >> 24);
 }
 */
