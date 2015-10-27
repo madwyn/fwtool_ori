@@ -4,3 +4,6 @@
 [submodule "deps/libarchive"]
 	path = deps/libarchive
 	url = https://github.com/libarchive/libarchive.git
+[submodule "deps/cargo"]
+	path = deps/cargo
+	url = https://github.com/JoakimSoderberg/cargo.git
