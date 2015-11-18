@@ -19,9 +19,9 @@ main(int argc, char **argv) {
     int adv_help = 0;
 
     // other options
-    char *input = malloc(512);
+    char *input       = malloc(512);
     char *input_dir   = malloc(512);
-    char *output = malloc(512);
+    char *output      = malloc(512);
     char *output_dir  = malloc(512);
 
     int v_major = 0;
@@ -78,7 +78,7 @@ main(int argc, char **argv) {
         if (adv_help) {
             // Remove the group hide flag so it shows up in the usage.
             cargo_group_set_flags(cargo, OPT_GRP_OPTION, 0);
-            cargo_print_usage(cargo, CARGO_USAGE_FULL_USAGE);
+            cargo_print_usage(cargo, CARGO_USAGE_FULL);
         } else if (extract) {
             exit(do_unpack(input, output, level));
         } else if (create) {

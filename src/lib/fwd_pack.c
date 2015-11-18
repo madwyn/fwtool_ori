@@ -40,6 +40,8 @@
 #include "tarfile.h"
 #include "lzpt_io.h"
 
+#include "dir.h"
+
 
 // added by kenan
 int
@@ -280,8 +282,7 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 
 		// create dest_name output directory, TODO look into zipfile.c
 		if(dest_name) {
-			//(void)mkdir(dest_name, 0777);
-			mkdir(dest_name);
+			MKDIR(dest_name);
 		}
 
 		// extract complete zip archive, needed for modify mode
@@ -337,13 +338,11 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 	}
 
 	// create nexhack output directory
-	//(void)mkdir(zip_dirname_out, 0777);
-	mkdir(zip_dirname_out);
+	MKDIR(zip_dirname_out);
 
 	// create level2 output directory
 	sprintf(dirname_lv2, "%s/%s", zip_dirname_out, LEVEL2_SUBDIR);
-	//(void)mkdir(dirname_lv2, 0777);
-	mkdir(dirname_lv2);
+	MKDIR(dirname_lv2);
 
 	// extract the (encrypted) "FDAT" chunk from the FirmwareData.dat file
 	sprintf(fname_fdat_enc, "%s/%s", dirname_lv2, BASENAME_FDAT_CHUNK);
@@ -366,8 +365,7 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 	// we now have a decrypted FDAT file: extract the "firmware" (tar)
 	// create level3 output directory
 	sprintf(dirname_lv3, "%s/%s", zip_dirname_out, LEVEL3_SUBDIR);
-	//(void)mkdir(dirname_lv3, 0777);
-	mkdir(dirname_lv3);
+	MKDIR(dirname_lv3);
 
     // extract header for later use in repack
     sprintf(fname_fdat_head, "%s/%s", dirname_lv3, BASENAME_FDAT_HEADER);
@@ -405,8 +403,7 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 
 	// create level4 output directory
 	sprintf(dirname_lv4, "%s/%s", zip_dirname_out, LEVEL4_SUBDIR);
-	//(void)mkdir(dirname_lv4, 0777);
-	mkdir(dirname_lv4);
+	MKDIR(dirname_lv4);
 
 	// if the extracted firmware file is a .tar file (should be), then extract all of the files
 	// to a sub-dir (same basename as firmware image without .tar extension)
@@ -427,8 +424,7 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 
 		// create level5 output directory
 		sprintf(dirname_lv5, "%s/%s", zip_dirname_out, LEVEL5_SUBDIR);
-		//(void)mkdir(dirname_lv5, 0777);
-		mkdir(dirname_lv5);
+		MKDIR(dirname_lv5);
 
 		sprintf(fname_lzpt_in_fname, "%s/%s", dirname_fdat_fw_untar, FNAME_FWV2_LZPT_NFA3_FAT_IMAGE);
 		if (is_lzpt_file(fname_lzpt_in_fname)) {
@@ -473,8 +469,7 @@ do_unpack(const char *fname_exefile_in, const char *dest_name, const int fwt_lev
 
 		// create level6 output directory
 		sprintf(dirname_lv6, "%s/%s", zip_dirname_out, LEVEL6_SUBDIR);
-		//(void)mkdir(dirname_lv6, 0777);
-		mkdir(dirname_lv6);
+		MKDIR(dirname_lv6);
 
 	}
 	printf("Success!\n"); sprintf(plog_global, "\n===== Success! =====\n"); log_it(plog_global);

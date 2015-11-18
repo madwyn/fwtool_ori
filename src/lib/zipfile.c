@@ -31,10 +31,12 @@
 
 #define	ZIPFILE_C
 
+#include <contrib/minizip/unzip.h>
 #include "config.h"
 #include "fwt_util.h"
 #include "contrib/minizip/unzip.h"
 #include "zipfile.h"
+#include "dir.h"
 
 /* // for date&time
 #undef	_WIN32
@@ -288,8 +290,7 @@ zipfile_extract_file(char *fname_zip, char *fname_inzip, char *dirname_out, char
 
 	if (dirname_out) {
 		sprintf(fullname_out, "%s/%s", dirname_out, p_basename_inzip);
-		//(void)mkdir(dirname_out, 0777);
-		mkdir(dirname_out);
+		MKDIR(dirname_out);
 	} else {
 		strcpy(fullname_out, p_basename_inzip);
 	}
@@ -380,14 +381,12 @@ _zipfile_extract_current_entry(zip_handle zh, char *dirname_out, char *p_fname_b
 			char	l_filename_inzip[MAXPATH];
 			sprintf(l_filename_inzip,"%s/%s", dirname_out, filename_inzip);
 			sprintf(plog_global, "Creating directory: %s\n",l_filename_inzip); log_it(plog_global);
-			//(void)mkdir(l_filename_inzip, 0777);
-			mkdir(l_filename_inzip);
+			MKDIR(l_filename_inzip);
 		}
 
 		else {
 			sprintf(plog_global, "Creating directory: %s\n",filename_inzip); log_it(plog_global);
-			//(void)mkdir(filename_inzip, 0777);
-			mkdir(filename_inzip);
+			MKDIR(filename_inzip);
 		}
 	}
 	else {
@@ -416,8 +415,7 @@ _zipfile_extract_current_entry(zip_handle zh, char *dirname_out, char *p_fname_b
 					char	l_write_filename[MAXPATH];
 					sprintf(l_write_filename,"%s/%s", dirname_out, filename_inzip);
 					sprintf(plog_global, "Creating directory (from path): %s\n",l_write_filename); log_it(plog_global);
-					//(void)mkdir(l_write_filename, 0777);
-					mkdir(l_write_filename);
+					MKDIR(l_write_filename);
 					*(filename_withoutpath-1)=c;
 					sprintf(l_write_filename,"%s/%s", dirname_out, filename_inzip);
 //TODO				fout=fopen64(l_write_filename,"wb");
@@ -425,8 +423,7 @@ _zipfile_extract_current_entry(zip_handle zh, char *dirname_out, char *p_fname_b
 				}
 				else {
 					sprintf(plog_global, "Creating directory (from path): %s\n",write_filename); log_it(plog_global);
-					//(void)mkdir(write_filename, 0777);
-					mkdir(write_filename);
+					MKDIR(write_filename);
 					*(filename_withoutpath-1)=c;
 //TODO				fout=fopen64(write_filename,"wb");
 					fout=fopen(write_filename,"wb");

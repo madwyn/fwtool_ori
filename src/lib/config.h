@@ -40,8 +40,6 @@
 	// POCC io.h
 	extern	int	_unlink(const char *name);
 	#define	unlink(fname)	_unlink(fname)
-	extern	int	_mkdir(const char *name);
-	#define	mkdir(path, mode)	_mkdir(path)
 	// POCC sys/types.h
 	#ifndef _INO_T_DEFINED
 	#define _INO_T_DEFINED

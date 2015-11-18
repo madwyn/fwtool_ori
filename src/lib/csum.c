@@ -26,7 +26,7 @@
 //
 
 #include "config.h"
-#include "endian.h"
+#include "_endian.h"
 
 #include "csum.h"
 

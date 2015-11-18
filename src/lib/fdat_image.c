@@ -25,11 +25,12 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
+#include <stdlib.h>
 #include "config.h"
 #include "fwt_names.h"
 #include "fwt_util.h"
 
-#include "endian.h"
+#include "_endian.h"
 #include "csum.h"
 #include "fdat_cipher.h"
 

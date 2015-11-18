@@ -3,7 +3,7 @@ project(libfwtool)
 set(libfwtool_SRCS
         aes.c
         csum.c
-        endian.c
+        _endian.c
         fdat_cipher.c
         fdat_cipher_aes.c
         fdat_cipher_sha1.c

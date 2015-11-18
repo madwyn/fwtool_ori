@@ -27,12 +27,14 @@
 
 // fwdata_chunks contains unpacking and repacking of fwdata file
 
+#include <stdlib.h>
 #include "config.h"
 #include "fwt_names.h"
 #include "fwt_util.h"
 #include "fwd_chunks.h"
 
-#include "endian.h"
+#include "_endian.h"
+#include "dir.h"
 
 #include "zlib.h"	// for crc-32
 
@@ -123,8 +125,7 @@ _fwdata_do_unpack(const char *fname_fwdata_in, const char *single_chunk_id, cons
 
 	if (full_extract_dirname_out) {
 		// confirm that output directory exists (create if necessary)
-		// (void)mkdir(full_extract_dirname_out, 0777);
-		mkdir(full_extract_dirname_out);
+		MKDIR(full_extract_dirname_out);
 
 		// create chunk TOC (table of contents) file
 		sprintf(fname_buf, "%s/%s", (char *)full_extract_dirname_out, FWD_CHUNK_TOC_NAME);

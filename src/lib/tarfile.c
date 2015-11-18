@@ -31,12 +31,13 @@
 #include "fwt_names.h"
 #include "fwt_util.h"
 #include <errno.h>
+#include <stdlib.h>
 
 #include "archive.h"
 #include "archive_entry.h"
 
 #include "tarfile.h"
-
+#include "dir.h"
 
 static tar_handle
 _create_th(struct archive *a)
@@ -155,15 +156,9 @@ _tarfile_extract_create_dir(char *path)
 			return r;
 	}
 
-#if defined(_WIN32)
-	if (0 == _mkdir(path)) {
+	if (0 == MKDIR(path)) {
 		return 0;
 	}
-#else
-	if (0 == mkdir(path, 0022)) {
-		return 0;
-	}
-#endif
 
 	/*
 	 * Without the following check, a/b/../b/c/d fails at the
@@ -363,13 +358,7 @@ tarfile_extract_all(const char *fname_tar, const char *dirname_out, const char *
 	}
 	else fclose(fh_attr);
 
-//	mkdir(dirname_out);
-
-#if defined(_WIN32)
-	_mkdir(dirname_out);
-#else
-	mkdir(dirname_out, 0022);
-#endif
+	MKDIR(dirname_out);
 
 	while(1) {
 		ret = archive_read_next_header(th->a, &entry);
